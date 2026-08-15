@@ -36,25 +36,19 @@ GitHub → Cloudflare بينشره أوتوماتيك → أول ما حد يف�
 `Legend#2026`) لكلمة سرية خاصة بيك قبل ما تنشر الرابط لأي حد، عشان محدش يفتح لوحة
 المطور غيرك.
 
-## 3) عمل APK من الرابط عن طريق WebIntoApp
-1. روح على https://www.webintoapp.com/website-to-apk
-2. حط رابط موقعك على Cloudflare Pages (مثلاً `https://sword-of-legends.pages.dev`)
-   في خانة الـ URL واضغط Next.
-3. في خطوة الإعدادات:
-   - ارفع نفس الأيقونة `icon-512.png` (أو `icon-512-maskable.png`) كأيقونة التطبيق.
-   - اسم التطبيق: سيف الأساطير.
-   - فعّل خيار **Offline Mode / Cache** لو موجود (مش إجباري، بس بيحسّن اللعب لما
-     النت يقطع — الـ `sw.js` أصلاً بيغطي الموضوع ده جوه الموقع نفسه).
-   - سيب باقي الإعدادات الافتراضية (splash screen، ownership، إلخ) زي ما هي أو
-     خصصها زي ما تحب.
-4. اضغط **Make App**. الموقع هيبني الـ APK/AAB أونلاين خلال دقيقة تقريبًا.
-5. حمّل ملف الـ APK وجرّبه على أي جهاز أندرويد، أو حمّل الـ AAB لو هتنشره على
-   Google Play.
+## 3) عمل APK من الرابط (Trusted Web Activity)
+أسهل طريقة من غير برمجة Android هي موقع **PWABuilder**:
 
-ملحوظة: WebIntoApp بيعمل التطبيق كـ WebView بيفتح رابطك مباشرة (مش TWA)، فمش
-محتاج ملف `assetlinks.json` زي طريقة PWABuilder — الموضوع أبسط. المهم إن اللينك
-اللي حطيته هو رابط Cloudflare Pages نفسه (مش أي نسخة محلية من الملف)، عشان آلية
-التحديث التلقائي في القسم الجاي تشتغل صح.
+1. روح على https://www.pwabuilder.com
+2. حط رابط الموقع بتاعك على Cloudflare Pages (مثلاً
+   `https://sword-of-legends.pages.dev`) واضغط Start.
+3. PWABuilder هيقرأ الـ `manifest.webmanifest` والـ `sw.js` تلقائي ويقيّم اللعبة.
+4. من تبويب **Android** اختار **Generate Package** → **Trusted Web Activity (TWA)**.
+5. هيديك ملف `.aab` أو `.apk` للتحميل، ومعاه ملف `assetlinks.json`.
+6. ارفع `assetlinks.json` في `.well-known/assetlinks.json` على نفس الدومين
+   (Cloudflare Pages) — ده اللي بيأكد إن التطبيق فعلاً بتاعك وبيشيل شريط
+   المتصفح من فوق فيبقى شكله زي تطبيق حقيقي 100%.
+7. ثبّت الـ APK على أي جهاز أندرويد للتجربة، أو ارفعه على Google Play.
 
 ## 4) بعد كده، أي تحديث؟
 بس عدّل `index.html` (آيتمز جديدة، أعداء جدد، أي حاجة) وابعتها GitHub:
