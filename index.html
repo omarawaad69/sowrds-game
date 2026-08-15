@@ -46,6 +46,7 @@ html,body{
 body{
   font-family:"Segoe UI","Tahoma","Geeza Pro","Arial",sans-serif;
   color:var(--text-light);
+  height:100vh;
   height:100dvh;
   position:relative;
 }
@@ -67,6 +68,7 @@ input{font-family:inherit;}
 #app{
   position:relative;
   width:100%;
+  height:100vh;
   height:100dvh;
   max-width:560px;
   margin:0 auto;
@@ -92,6 +94,7 @@ input{font-family:inherit;}
 .screen{
   position:absolute;inset:0;
   display:flex;flex-direction:column;
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
   animation:fadeIn .35s ease;
 }
 @keyframes fadeIn{from{opacity:0; transform:scale(0.98);} to{opacity:1; transform:scale(1);}}
@@ -132,21 +135,23 @@ input{font-family:inherit;}
 
 /* ============================= TITLE SCREEN ============================= */
 #screen-title{
-  align-items:center;justify-content:center;
-  padding:24px;
+  align-items:center;justify-content:flex-start;
+  padding:max(20px, env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));
   position:relative;
 }
 .title-wrap{
   position:relative;z-index:6;
   display:flex;flex-direction:column;align-items:center;
-  gap:10px;text-align:center;
+  gap:8px;text-align:center;
+  margin-top:auto; margin-bottom:auto;
+  padding-bottom:34px; /* room so the credit line never overlaps the last button */
 }
 .rune-circle{
-  width:130px;height:130px;border-radius:50%;
+  width:100px;height:100px;border-radius:50%;
   border:2px solid var(--gold-dim);
   display:flex;align-items:center;justify-content:center;
-  font-size:58px;
-  margin-bottom:6px;
+  font-size:44px;
+  margin-bottom:2px;
   position:relative;
   box-shadow:0 0 40px rgba(224,184,76,0.25), inset 0 0 25px rgba(224,184,76,0.15);
   animation:spin 24s linear infinite;
@@ -161,18 +166,18 @@ input{font-family:inherit;}
 @keyframes counterspin{from{transform:rotate(0);}to{transform:rotate(-360deg);}}
 
 .game-logo{
-  font-size:40px;font-weight:800;letter-spacing:1px;
+  font-size:32px;font-weight:800;letter-spacing:1px;
   background:linear-gradient(180deg, var(--gold-bright), var(--gold) 55%, var(--gold-dim));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   text-shadow:0 4px 18px rgba(224,184,76,0.35);
-  margin:0;line-height:1.25;
+  margin:0;line-height:1.2;
 }
 .game-tagline{
-  color:var(--text-dim);font-size:14px;margin:0 0 18px;letter-spacing:0.5px;
+  color:var(--text-dim);font-size:12.5px;margin:0 0 10px;letter-spacing:0.5px;
 }
-.title-btns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:280px;}
+.title-btns{display:flex;flex-direction:column;gap:9px;width:100%;max-width:280px;}
 .btn{
-  padding:14px 22px;border-radius:12px;font-size:16px;font-weight:700;
+  padding:12px 20px;border-radius:12px;font-size:14.5px;font-weight:700;
   letter-spacing:0.5px;
   transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
   position:relative;
@@ -911,9 +916,17 @@ input{font-family:inherit;}
 @keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-8px);}40%{transform:translateX(8px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
 
 @media (max-height:640px){
-  .rune-circle{width:96px;height:96px;font-size:44px;}
-  .game-logo{font-size:32px;}
+  .rune-circle{width:78px;height:78px;font-size:34px;margin-bottom:0;}
+  .game-logo{font-size:26px;}
+  .game-tagline{font-size:11px;margin-bottom:6px;}
+  .title-btns{gap:7px;}
+  .btn{padding:10px 18px;font-size:13.5px;}
   .round-btn{width:52px;height:52px;font-size:19px;}
+}
+@media (max-height:560px){
+  .rune-circle{width:60px;height:60px;font-size:26px;}
+  .game-logo{font-size:22px;}
+  .game-tagline{display:none;}
 }
 
 /* ============================= ROTATE-DEVICE PROMPT ============================= */
@@ -936,6 +949,20 @@ input{font-family:inherit;}
   width:150px;height:150px;margin:0 auto 6px;border-radius:50%;overflow:hidden;
   background:radial-gradient(circle at 35% 30%, var(--bg-panel-light), var(--bg-dark));
   border:2px solid var(--gold-dim); box-shadow:0 0 30px rgba(224,184,76,0.25);
+  perspective:500px;
+}
+.char-portrait-wrap svg{ animation:hero3dTurn 7s ease-in-out infinite; transform-style:preserve-3d; }
+.class-icon{ perspective:400px; }
+.class-icon svg{ animation:hero3dTurn 8s ease-in-out infinite; transform-style:preserve-3d; }
+.class-card.selected .class-icon svg{ animation-duration:5s; }
+.pbb-icon{ perspective:400px; }
+.pbb-icon svg{ animation:hero3dTurn 6s ease-in-out infinite; }
+@keyframes hero3dTurn{
+  0%,100%{ transform:rotateY(-11deg) rotateX(2deg); }
+  50%{ transform:rotateY(11deg) rotateX(-2deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .char-portrait-wrap svg,.class-icon svg,.pbb-icon svg{ animation:none; }
 }
 
 /* ============================= RARITY SYSTEM ============================= */
@@ -1661,15 +1688,17 @@ function heroSVG(cls, rarity){
              '<circle cx="50" cy="50" r="46" fill="none" stroke="'+aura+'" stroke-width="5" opacity="0.18"/>' : '';
   var cape = cls==='warrior' ? '<path d="M33 52 Q24 78 30 96 Q40 84 40 60 Z" fill="url(#cape'+uid+')" opacity="0.92"/>' :
              '<path d="M35 50 Q28 76 33 96 Q41 82 40 58 Z" fill="url(#cape'+uid+')" opacity="0.85"/>';
+  var groundShadow = '<ellipse cx="50" cy="97" rx="22" ry="4.2" fill="#000" opacity="0.4"/>';
   return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
     '<defs>'+
       '<radialGradient id="aura'+uid+'" cx="50%" cy="42%" r="62%">'+
         '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.5"/>'+
         '<stop offset="100%" stop-color="'+aura+'" stop-opacity="0"/>'+
       '</radialGradient>'+
-      '<linearGradient id="body'+uid+'" x1="0" y1="0" x2="0.3" y2="1">'+
+      '<linearGradient id="body'+uid+'" x1="0" y1="0" x2="0.55" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.primary+'"/>'+
-        '<stop offset="100%" stop-color="'+pal.secondary+'"/>'+
+        '<stop offset="62%" stop-color="'+pal.secondary+'"/>'+
+        '<stop offset="100%" stop-color="#050308"/>'+
       '</linearGradient>'+
       '<linearGradient id="cape'+uid+'" x1="0" y1="0" x2="1" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.secondary+'"/>'+
@@ -1684,22 +1713,32 @@ function heroSVG(cls, rarity){
         '<stop offset="0%" stop-color="#fff" stop-opacity="0.5"/>'+
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
       '</linearGradient>'+
-      '<radialGradient id="skinshade'+uid+'" cx="35%" cy="30%" r="70%">'+
-        '<stop offset="0%" stop-color="#fff" stop-opacity="0.28"/>'+
-        '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
+      '<radialGradient id="skinshade'+uid+'" cx="33%" cy="27%" r="72%">'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>'+
+        '<stop offset="45%" stop-color="#fff" stop-opacity="0.06"/>'+
+        '<stop offset="100%" stop-color="#000" stop-opacity="0.22"/>'+
       '</radialGradient>'+
+      '<linearGradient id="rim'+uid+'" x1="0" y1="0" x2="1" y2="0">'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.55"/>'+
+        '<stop offset="18%" stop-color="#fff" stop-opacity="0"/>'+
+        '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
+      '</linearGradient>'+
     '</defs>'+
     '<circle cx="50" cy="50" r="48" fill="url(#aura'+uid+')"/>'+
+    groundShadow+
     cape+
     weapon+
     '<path d="M27 95 Q50 56 73 95 Z" fill="url(#body'+uid+')"/>'+
-    '<path d="M27 95 Q50 56 73 95 L73 95 Q52 70 27 95 Z" fill="#000" opacity="0.12"/>'+
+    '<path d="M27 95 Q50 56 73 95 L73 95 Q52 70 27 95 Z" fill="#000" opacity="0.16"/>'+
+    '<path d="M28.5 92 Q42 60 49 57" stroke="url(#rim'+uid+')" stroke-width="2.4" fill="none" opacity="0.9"/>'+
     '<rect x="36" y="49" width="28" height="30" rx="10" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.6"/>'+
-    '<rect x="36" y="49" width="13" height="30" rx="10" fill="#fff" opacity="0.06"/>'+
+    '<rect x="36" y="49" width="13" height="30" rx="10" fill="#fff" opacity="0.09"/>'+
+    '<rect x="57" y="49" width="7" height="30" rx="6" fill="#000" opacity="0.18"/>'+
     '<circle cx="50" cy="36" r="15.8" fill="'+pal.skin+'"/>'+
     '<circle cx="50" cy="36" r="15.8" fill="url(#skinshade'+uid+')"/>'+
+    '<ellipse cx="43.5" cy="29.5" rx="4.4" ry="3" fill="#fff" opacity="0.35"/>'+
     '<path d="M33 32 Q50 12 67 32 Q67 22 50 18 Q33 22 33 32 Z" fill="'+pal.secondary+'"/>'+
-    '<path d="M33 32 Q40 22 50 19 Q42 24 37 33 Z" fill="#fff" opacity="0.08"/>'+
+    '<path d="M33 32 Q40 22 50 19 Q42 24 37 33 Z" fill="#fff" opacity="0.1"/>'+
     '<path d="M42.5 39 Q44 37.3 45.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
     '<path d="M54.5 39 Q56 37.3 57.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
     '<circle cx="44" cy="37.2" r="2.1" fill="#241708"/>'+
@@ -4735,4 +4774,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-</html>
+  </html>
