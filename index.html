@@ -3493,6 +3493,7 @@ function updateRangeState(){
 function setupJoystick(){
   var base = $('joy-base'), stick = $('joy-stick');
   var maxR = 30;
+  var activePointerId = null;
   function setFromPointer(clientX, clientY){
     var rect = base.getBoundingClientRect();
     var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
@@ -3511,22 +3512,36 @@ function setupJoystick(){
   function resetStick(){
     stick.style.transform = 'translate(-50%,-50%)';
     arena.joyDX = 0; arena.joyDY = 0; arena.joyActive = false;
+    activePointerId = null;
   }
   base.addEventListener('pointerdown', function(ev){
     ev.preventDefault();
     arena.joyActive = true;
-    base.setPointerCapture(ev.pointerId);
+    activePointerId = ev.pointerId;
+    try{ base.setPointerCapture(ev.pointerId); }catch(e){}
     setFromPointer(ev.clientX, ev.clientY);
   });
-  base.addEventListener('pointermove', function(ev){
-    if(!arena.joyActive) return;
+  // NOTE: move/up/cancel are tracked on `window`, not just `base`, and gated by
+  // matching pointerId rather than relying solely on setPointerCapture(). A real
+  // thumb drags this knob well past the base's own ~92px circle (that's the whole
+  // point of an analog stick — the visual dot clamps at maxR while the finger keeps
+  // going), and pointer capture isn't 100% reliably honored across every Android
+  // WebView build. When it silently drops, a base-only listener stops receiving
+  // pointermove entirely the moment the finger leaves that small circle, which
+  // freezes the stick mid-drag and reads exactly like "the controls don't work" —
+  // this fixes that at the root instead of only in capture-friendly environments.
+  window.addEventListener('pointermove', function(ev){
+    if(!arena.joyActive || ev.pointerId!==activePointerId) return;
     ev.preventDefault();
     setFromPointer(ev.clientX, ev.clientY);
+  }, {passive:false});
+  window.addEventListener('pointerup', function(ev){
+    if(ev.pointerId!==activePointerId) return;
+    resetStick();
   });
-  base.addEventListener('pointerup', resetStick);
-  base.addEventListener('pointercancel', resetStick);
-  base.addEventListener('pointerleave', function(ev){
-    if(ev.pointerType==='mouse') resetStick();
+  window.addEventListener('pointercancel', function(ev){
+    if(ev.pointerId!==activePointerId) return;
+    resetStick();
   });
 }
 
@@ -4319,7 +4334,7 @@ function setupLeagueJoystick(){
   var base = $('lg-joy-base'), stick = $('lg-joy-stick');
   if(!base || !stick || base._wired) return;
   base._wired = true;
-  var maxR = 30, active = false;
+  var maxR = 30, active = false, activePointerId = null;
   function setFromPointer(clientX, clientY){
     var rect = base.getBoundingClientRect();
     var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
@@ -4329,13 +4344,19 @@ function setupLeagueJoystick(){
     stick.style.transform = 'translate('+(dx-23)+'px,'+(dy-23)+'px)';
     // translate the analog stick position into the same discrete
     // up/down/left/right flags the rest of the game (and the online
-    // multiplayer sync) already reads, so nothing else needs to change
-    var deadzone = maxR*0.28;
+    // multiplayer sync) already reads, so nothing else needs to change.
+    // Uses the drag angle (not separate x/y thresholds) so a diagonal
+    // pull reliably lights up exactly the two flags closest to where
+    // you're actually pointing, instead of jittering between them
+    // right around the diagonals.
+    var deadzone = maxR*0.22;
     if(dist > deadzone){
-      leagueKeys.left = dx < -deadzone*0.4;
-      leagueKeys.right = dx > deadzone*0.4;
-      leagueKeys.up = dy < -deadzone*0.4;
-      leagueKeys.down = dy > deadzone*0.4;
+      var ang = Math.atan2(dy,dx); // -PI..PI, 0=right, PI/2=down
+      var deg = ang*180/Math.PI; if(deg<0) deg += 360;
+      leagueKeys.right = deg>337.5 || deg<=22.5   || (deg>22.5&&deg<=67.5)   || (deg>292.5&&deg<=337.5);
+      leagueKeys.down  = (deg>22.5&&deg<=67.5)    || (deg>67.5&&deg<=112.5)  || (deg>112.5&&deg<=157.5);
+      leagueKeys.left  = (deg>112.5&&deg<=157.5)  || (deg>157.5&&deg<=202.5) || (deg>202.5&&deg<=247.5);
+      leagueKeys.up    = (deg>202.5&&deg<=247.5)  || (deg>247.5&&deg<=292.5) || (deg>292.5&&deg<=337.5);
     } else {
       leagueKeys.up = leagueKeys.down = leagueKeys.left = leagueKeys.right = false;
     }
@@ -4344,22 +4365,34 @@ function setupLeagueJoystick(){
     stick.style.transform = 'translate(-50%,-50%)';
     leagueKeys.up = leagueKeys.down = leagueKeys.left = leagueKeys.right = false;
     active = false;
+    activePointerId = null;
   }
   base.addEventListener('pointerdown', function(ev){
     ev.preventDefault();
     active = true;
-    base.setPointerCapture(ev.pointerId);
+    activePointerId = ev.pointerId;
+    try{ base.setPointerCapture(ev.pointerId); }catch(e){}
     setFromPointer(ev.clientX, ev.clientY);
   });
-  base.addEventListener('pointermove', function(ev){
-    if(!active) return;
+  // NOTE: tracked on `window` (gated by pointerId), not just `base` — see the
+  // matching comment in setupJoystick() above for why: a real thumb routinely
+  // drags this knob past its own small base circle, and relying only on
+  // setPointerCapture() to keep receiving events once that happens isn't
+  // reliable across every Android WebView build. Without this, the character
+  // can silently stop responding to direction mid-drag, which is exactly what
+  // "can't control the character properly" looks like from the player's side.
+  window.addEventListener('pointermove', function(ev){
+    if(!active || ev.pointerId!==activePointerId) return;
     ev.preventDefault();
     setFromPointer(ev.clientX, ev.clientY);
+  }, {passive:false});
+  window.addEventListener('pointerup', function(ev){
+    if(ev.pointerId!==activePointerId) return;
+    resetStick();
   });
-  base.addEventListener('pointerup', resetStick);
-  base.addEventListener('pointercancel', resetStick);
-  base.addEventListener('pointerleave', function(ev){
-    if(ev.pointerType==='mouse') resetStick();
+  window.addEventListener('pointercancel', function(ev){
+    if(ev.pointerId!==activePointerId) return;
+    resetStick();
   });
 }
 
