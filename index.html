@@ -307,7 +307,15 @@ input{font-family:inherit;}
   background:radial-gradient(ellipse at 50% 0%, rgba(43,31,69,0.4), transparent 60%);
   touch-action:none;
 }
-#map-canvas{display:block;border-radius:4px;}
+#map-canvas{display:block;border-radius:4px;transition:opacity .5s ease;}
+#map3d-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:1;opacity:0;transition:opacity .6s ease;pointer-events:none;
+  border-radius:4px;
+}
+#map3d-canvas.ready{opacity:1;}
+#map-canvas.faded-2d{opacity:0;}
+#player-glyph.faded-2d{opacity:0;}
 .player-sprite{
   position:absolute;display:flex;align-items:center;justify-content:center;
   transition:left .14s linear, top .14s linear;
@@ -459,6 +467,12 @@ input{font-family:inherit;}
   border:1px solid rgba(224,184,76,0.14);
   touch-action:none;
 }
+#battle3d-canvas{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:1;opacity:0;transition:opacity .6s ease;pointer-events:none;
+}
+#battle3d-canvas.ready{opacity:1;}
+#enemy-sprite.faded-2d, #hero-sprite.faded-2d{opacity:0;}
 .arena-ground{
   position:absolute;left:6%;right:6%;bottom:8%;height:14%;border-radius:50%;
   background:radial-gradient(ellipse at center, rgba(0,0,0,0.45), transparent 72%);
@@ -1134,6 +1148,7 @@ input{font-family:inherit;}
     </div>
     <div id="map-wrap">
       <canvas id="map-canvas"></canvas>
+      <canvas id="map3d-canvas"></canvas>
       <div class="player-sprite" id="player-sprite"><div class="glow"></div><div class="glyph" id="player-glyph"></div><div class="tip-bubble" id="tip-bubble"></div></div>
       <div class="vignette"></div>
     </div>
@@ -1183,6 +1198,7 @@ input{font-family:inherit;}
     </div>
 
     <div class="arena-wrap" id="arena-wrap">
+      <canvas id="battle3d-canvas"></canvas>
       <div class="float-layer" id="float-layer"></div>
       <div class="arena-ground"></div>
 
@@ -1413,6 +1429,7 @@ input{font-family:inherit;}
       </div>
       <div id="league-killfeed"></div>
     </div>
+    <div class="roster-row" id="league-roster-red"></div>
     <div id="league-controls">
       <div class="lg-controls-row">
         <div class="dpad-wrap">
@@ -2382,6 +2399,7 @@ function setupCanvas(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   document.documentElement.style.setProperty('--tile', tile+'px');
   syncPlayerOnMap(true);
+  Map3D.start();
 }
 
 function updateCamera(){
@@ -2602,6 +2620,7 @@ function equipItem(id){
   applyEquipBonus(p, def.bonus, 1);
   p.equipment[slot] = id;
   renderHUD();
+  Map3D.refreshPlayerAppearance();
   toast('🛡️ تم تجهيز: '+def.name);
   saveGame(true);
 }
@@ -2846,6 +2865,7 @@ function startBattle(enemyId, isBoss){
   hideSubPanels();
   showScreen('screen-battle');
   initBattleArena();
+  Battle3D.setup(enemy);
   renderBattle();
 }
 
@@ -3085,6 +3105,7 @@ function lungeHero(cls){
   el.classList.remove('attacking','heavy-attacking');
   void el.offsetWidth;
   el.classList.add(cls);
+  Battle3D.heroAttack(cls);
   setTimeout(function(){ el.classList.remove(cls); }, 400);
 }
 
@@ -3125,6 +3146,7 @@ function applyDamageToEnemy(res, e){
   e.hp = clamp(e.hp - res.dmg, 0, e.maxHp);
   if(!res.missed){
     flashEnemy(); shakeScreen(); spawnImpactBurst($('enemy-sprite'));
+    Battle3D.enemyHurt();
     floatDamage(res.missed?'خطأ!':res.dmg, res.crit?'crit':'', $('enemy-sprite'));
   } else {
     floatDamage('محاولة فاشلة','miss', $('enemy-sprite'));
@@ -3300,6 +3322,7 @@ function playerDefend(){
   b.locked = true;
   b.playerDefending = true;
   $('hero-sprite').classList.add('defending');
+  Battle3D.heroDefend(true);
   b.log = 'اتخذت وضعية الدفاع، الضرر القادم سينخفض';
   renderBattle();
   afterPlayerAction();
@@ -3360,9 +3383,11 @@ function enemyTurn(){
 
   var ew = $('enemy-sprite-wrap');
   ew.classList.add('telegraph');
+  Battle3D.enemyTelegraph();
   setTimeout(function(){
     ew.classList.remove('telegraph');
     ew.classList.remove('attacking'); void ew.offsetWidth; ew.classList.add('attacking');
+    Battle3D.enemyAttack();
     setTimeout(function(){ ew.classList.remove('attacking'); }, 320);
 
     var power = e.atk;
@@ -3375,6 +3400,7 @@ function enemyTurn(){
       shakeScreen(); spawnImpactBurst($('hero-sprite'), 'crimson');
       var hs = $('hero-sprite');
       hs.classList.remove('hurt'); void hs.offsetWidth; hs.classList.add('hurt');
+      Battle3D.heroHurt();
       setTimeout(function(){ hs.classList.remove('hurt'); }, 300);
     } else {
       floatDamage('تفادى!','miss',$('hero-sprite-wrap'));
@@ -3393,6 +3419,7 @@ function enemyTurn(){
 function finishEnemyTurn(b){
   b.playerDefending = false;
   $('hero-sprite').classList.remove('defending');
+  Battle3D.heroDefend(false);
   if(b.playerBuff.turns>0){
     b.playerBuff.turns--;
     if(b.playerBuff.turns<=0) b.playerBuff.atkMult = 1;
@@ -3559,7 +3586,7 @@ var league = null; // active match state, null when not playing
    player doesn't show up in time, bots fill their slot — same as the
    offline mode — so a match is always a full, playable 5v5.
    ============================================================ */
-var MP_SERVER_URL = 'wss://sowrd-of-legends.omarawaad69.workers.dev/';
+var MP_SERVER_URL = 'wss://sowrd-of-legends.omarawaad69.workers.dev';
 // ⚠️ غيّر السطر ده لرابط سيرفر الملتيبلاير بتاعك بعد ما تنشره (شوف
 // multiplayer-server/README.md في ملفات المشروع لخطوات النشر بالتفصيل).
 
@@ -3569,9 +3596,10 @@ var mp = {
 };
 
 function startOnlineLeagueMatch(){
-  if(!state.player){ toast('أنشئ بطلاً أولاً من "مغامرة جديدة"'); return; }
+  if(!ensureLeaguePlayer()) return;
   if(MP_SERVER_URL.indexOf('YOUR-WORKER-SUBDOMAIN')>=0){
-    toast('لازم تنشر سيرفر الملتيبلاير الأول وتحط رابطه في MP_SERVER_URL جوه الكود');
+    toast('⚠️ سيرفر الملتيبلاير لسه مش متظبط — راجع MP_SERVER_URL. هنكمّل بالبوتات دلوقتي');
+    startLeagueMatch();
     return;
   }
   mp.myId = state.player.id || generateId();
@@ -3598,7 +3626,8 @@ function startOnlineLeagueMatch(){
       try{ mp.lobbyWs.close(); }catch(e){}
       toast('محدش لقيناه دلوقتي — هنكمّل بالبوتات 🤖');
       cancelOnlineWait();
-      startLeagueMatch();
+      try{ startLeagueMatch(); }
+      catch(err){ console.error('Bot fallback failed:', err); toast('تعذر بدء المعركة — حاول مرة أخرى'); showScreen('screen-title'); }
     }
   }, 20000);
 }
@@ -3802,6 +3831,24 @@ function makeLeagueUnit(team, idx, cls, lvl){
   };
 }
 
+function ensureLeaguePlayer(){
+  // League mode (5×5) must always be playable straight from the title
+  // screen, even if the person hasn't created/loaded a real adventure
+  // save yet. If there's no character in memory, spin up a quick
+  // temporary one just for this match — it's never written to the
+  // real save file, so it can't overwrite anyone's actual progress.
+  if(state.player) return true;
+  try{
+    state.player = newPlayer('warrior', 'بطل الدوري');
+    toast('⚔️ تم إنشاء بطل مؤقت لخوض معركة الدوري');
+    return true;
+  }catch(err){
+    console.error('ensureLeaguePlayer failed:', err);
+    toast('حدث خطأ غير متوقع أثناء تجهيز المعركة');
+    return false;
+  }
+}
+
 function newLeagueState(){
   return {
     time: LEAGUE_ROUND_SECONDS,
@@ -3822,18 +3869,30 @@ function newLeagueState(){
 }
 
 function launchLeagueScreen(){
-  renderLeagueRoster();
-  updateLeagueSpecialBtn();
-  showScreen('screen-league');
-  requestAnimationFrame(function(){
-    setupLeagueCanvas();
-    league.lastTs = performance.now();
-    requestAnimationFrame(leagueLoop);
-  });
+  try{
+    renderLeagueRoster();
+    updateLeagueSpecialBtn();
+    showScreen('screen-league');
+    requestAnimationFrame(function(){
+      try{
+        setupLeagueCanvas();
+        league.lastTs = performance.now();
+        requestAnimationFrame(leagueLoop);
+      }catch(err){
+        console.error('League match failed to start:', err);
+        toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
+        showScreen('screen-title');
+      }
+    });
+  }catch(err){
+    console.error('League match failed to launch:', err);
+    toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
+    showScreen('screen-title');
+  }
 }
 
 function startLeagueMatch(){
-  if(!state.player){ toast('أنشئ بطلاً أولاً من "مغامرة جديدة"'); return; }
+  if(!ensureLeaguePlayer()) return;
   var classKeys = Object.keys(CLASSES);
   league = newLeagueState();
   var lvl = state.player.level || 1;
@@ -4723,6 +4782,459 @@ function wireEvents(){
 }
 
 /* ============================================================
+   3D ENGINE — Three.js low-poly stylized characters & world.
+   This is an additive visual layer: it never touches game state
+   or combat/movement logic. If Three.js can't be loaded (offline,
+   CDN blocked, WebGL unsupported), everything silently stays on
+   the original 2D view and the game keeps working normally.
+   ============================================================ */
+var Engine3D = (function(){
+  var loadingPromise = null;
+  function ensureThree(){
+    if(window.THREE) return Promise.resolve();
+    if(loadingPromise) return loadingPromise;
+    loadingPromise = new Promise(function(resolve, reject){
+      try{
+        var s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/128/three.min.js';
+        s.onload = function(){ resolve(); };
+        s.onerror = function(){ reject(new Error('three.js failed to load')); };
+        document.head.appendChild(s);
+      }catch(err){ reject(err); }
+    });
+    return loadingPromise;
+  }
+
+  function buildHumanoid(pal, opts){
+    opts = opts || {};
+    var T = window.THREE;
+    var g = new T.Group();
+    var mPrimary = new T.MeshStandardMaterial({color:pal.primary, roughness:0.6, metalness:0.15});
+    var mSecondary = new T.MeshStandardMaterial({color:pal.secondary, roughness:0.7});
+    var mMetal = new T.MeshStandardMaterial({color:pal.metal, roughness:0.35, metalness:0.7});
+    var mSkin = new T.MeshStandardMaterial({color:pal.skin, roughness:0.85});
+
+    var torso = new T.Mesh(new T.CylinderGeometry(0.32,0.38,0.82,8), mPrimary);
+    torso.position.y = 1.14;
+    g.add(torso);
+
+    var head = new T.Mesh(new T.SphereGeometry(0.25,10,8), mSkin);
+    head.position.y = 1.72;
+    g.add(head);
+
+    var hat = new T.Mesh(new T.ConeGeometry(0.27,0.22,8), mSecondary);
+    hat.position.y = 1.94;
+    g.add(hat);
+
+    var hipY = 0.76;
+    var legGeo = new T.CylinderGeometry(0.1,0.09,0.76,6);
+    var legLPivot = new T.Group(); legLPivot.position.set(-0.14,hipY,0);
+    var legL = new T.Mesh(legGeo, mSecondary); legL.position.set(0,-0.38,0); legLPivot.add(legL);
+    var legRPivot = new T.Group(); legRPivot.position.set(0.14,hipY,0);
+    var legR = new T.Mesh(legGeo, mSecondary); legR.position.set(0,-0.38,0); legRPivot.add(legR);
+    g.add(legLPivot); g.add(legRPivot);
+
+    var armGeo = new T.CylinderGeometry(0.075,0.07,0.7,6);
+    var shoulderY = 1.48;
+    var armLPivot = new T.Group(); armLPivot.position.set(-0.4,shoulderY,0);
+    var armL = new T.Mesh(armGeo, mSkin); armL.position.set(0,-0.35,0); armLPivot.add(armL);
+    var armRPivot = new T.Group(); armRPivot.position.set(0.4,shoulderY,0);
+    var armR = new T.Mesh(armGeo, mSkin); armR.position.set(0,-0.35,0); armRPivot.add(armR);
+    g.add(armLPivot); g.add(armRPivot);
+
+    var weapon = null;
+    if(opts.weapon==='sword'){
+      weapon = new T.Mesh(new T.BoxGeometry(0.06,0.6,0.06), mMetal);
+      weapon.position.set(0,-0.6,0.05);
+    } else if(opts.weapon==='staff'){
+      weapon = new T.Mesh(new T.CylinderGeometry(0.03,0.03,0.82,6), mSecondary);
+      weapon.position.set(0,-0.68,0);
+      var orb = new T.Mesh(new T.SphereGeometry(0.09,8,8), new T.MeshStandardMaterial({color:pal.primary, emissive:pal.primary, emissiveIntensity:0.6}));
+      orb.position.set(0,-1.02,0);
+      weapon.add(orb);
+    } else if(opts.weapon==='bow'){
+      weapon = new T.Mesh(new T.TorusGeometry(0.26,0.02,6,10,Math.PI), mSecondary);
+      weapon.rotation.z = Math.PI/2;
+      weapon.position.set(0,-0.48,0.05);
+    }
+    if(weapon) armRPivot.add(weapon);
+
+    var padGeo = new T.SphereGeometry(0.12,8,6);
+    var padL = new T.Mesh(padGeo, mMetal); padL.position.set(-0.4,1.55,0); g.add(padL);
+    var padR = new T.Mesh(padGeo, mMetal); padR.position.set(0.4,1.55,0); g.add(padR);
+
+    var aura = new T.Mesh(new T.RingGeometry(0.48,0.54,24),
+      new T.MeshBasicMaterial({color:pal.aura||pal.primary, side:T.DoubleSide, transparent:true, opacity:0.5}));
+    aura.rotation.x = -Math.PI/2; aura.position.y = 0.02;
+    g.add(aura);
+
+    g.userData = {
+      torso:torso, head:head, legLPivot:legLPivot, legRPivot:legRPivot,
+      armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, defending:false,
+      flashables:[mSkin, mPrimary]
+    };
+    return g;
+  }
+
+  function shadeColor(hexInt, amt){
+    var T = window.THREE;
+    var c = new T.Color(hexInt);
+    if(amt<0) c.multiplyScalar(1+amt); else c.lerp(new T.Color(0xffffff), amt);
+    return c;
+  }
+  function clampNum(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+  function buildCreature(def, seedColor){
+    var T = window.THREE;
+    var g = new T.Group();
+    var scale = clampNum(0.7 + (def.hp/300), 0.7, 1.9);
+    var mBody = new T.MeshStandardMaterial({color:seedColor, roughness:0.65});
+    var mDark = new T.MeshStandardMaterial({color:shadeColor(seedColor,-0.4), roughness:0.7});
+    var mEye = new T.MeshStandardMaterial({color:0xffe08a, emissive:0xffe08a, emissiveIntensity:0.7});
+
+    var body = new T.Mesh(new T.SphereGeometry(0.5,10,8), mBody);
+    body.position.y = 0.55;
+    body.scale.set(1,0.9,1.15);
+    g.add(body);
+
+    var head = new T.Mesh(new T.SphereGeometry(0.3,10,8), mBody);
+    head.position.set(0,0.95,0.35);
+    g.add(head);
+
+    var eyeGeo = new T.SphereGeometry(0.05,6,6);
+    var eyeL = new T.Mesh(eyeGeo, mEye); eyeL.position.set(-0.12,0.98,0.6);
+    var eyeR = new T.Mesh(eyeGeo, mEye); eyeR.position.set(0.12,0.98,0.6);
+    g.add(eyeL); g.add(eyeR);
+
+    var legGeo = new T.CylinderGeometry(0.07,0.06,0.42,6);
+    [[-0.22,-0.22],[0.22,-0.22],[-0.22,0.18],[0.22,0.18]].forEach(function(pos){
+      var leg = new T.Mesh(legGeo, mDark);
+      leg.position.set(pos[0],0.21,pos[1]);
+      g.add(leg);
+    });
+
+    if(def.mag>10){
+      var hornGeo = new T.ConeGeometry(0.06,0.3,6);
+      var hL = new T.Mesh(hornGeo, mDark); hL.position.set(-0.14,1.25,0.3); hL.rotation.z=0.3;
+      var hR = new T.Mesh(hornGeo, mDark); hR.position.set(0.14,1.25,0.3); hR.rotation.z=-0.3;
+      g.add(hL); g.add(hR);
+    }
+    if(def.spd>10){
+      var wingGeo = new T.ConeGeometry(0.32,0.08,4);
+      var wL = new T.Mesh(wingGeo, mDark); wL.position.set(-0.5,0.7,0); wL.rotation.z=Math.PI/2.2;
+      var wR = new T.Mesh(wingGeo, mDark); wR.position.set(0.5,0.7,0); wR.rotation.z=-Math.PI/2.2;
+      g.add(wL); g.add(wR);
+    }
+    if(def.isBoss){
+      body.scale.multiplyScalar(1.25);
+      var crown = new T.Mesh(new T.ConeGeometry(0.12,0.22,5),
+        new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.4}));
+      crown.position.set(0,1.35,0.25);
+      g.add(crown);
+    }
+    g.userData = { body:body, head:head, baseY:0, flashables:[mBody] };
+    g.scale.set(scale,scale,scale);
+    return g;
+  }
+
+  function triggerLunge(group, dx){
+    if(!group) return;
+    var startX = group.position.x;
+    var start = performance.now(), dur = 380;
+    function step(now){
+      var k = Math.min(1,(now-start)/dur);
+      var curve = k<0.5 ? (k/0.5) : (1-(k-0.5)/0.5);
+      group.position.x = startX + dx*curve;
+      if(k<1) requestAnimationFrame(step); else group.position.x = startX;
+    }
+    requestAnimationFrame(step);
+  }
+  function triggerTelegraph(group){
+    if(!group) return;
+    var start = performance.now();
+    function step(now){
+      var k = (now-start)/220;
+      if(k>1){ group.scale.setScalar(group.userData._baseScale||1); return; }
+      var base = group.userData._baseScale || 1;
+      group.scale.setScalar(base*(1+Math.sin(k*Math.PI)*0.12));
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function triggerFlash(group, colorHex){
+    if(!group || !group.userData || !group.userData.flashables) return;
+    var T = window.THREE;
+    var mats = group.userData.flashables;
+    mats.forEach(function(m){ m.emissive = new T.Color(colorHex); m.emissiveIntensity = 0.9; });
+    setTimeout(function(){
+      mats.forEach(function(m){ m.emissiveIntensity = 0; });
+    }, 260);
+  }
+  function setDefendPose(group, active){
+    if(!group || !group.userData) return;
+    group.userData.defending = !!active;
+  }
+  function animateHumanoidIdle(g, t){
+    if(!g || !g.userData || !g.userData.armLPivot) return;
+    var u = g.userData;
+    g.position.y = Math.sin(t*1.6)*0.025;
+    if(u.defending){
+      u.armLPivot.rotation.x = -1.15; u.armRPivot.rotation.x = -1.15;
+    } else {
+      u.armLPivot.rotation.x = Math.sin(t*1.3)*0.09;
+      u.armRPivot.rotation.x = Math.sin(t*1.3+Math.PI)*0.09;
+    }
+    u.legLPivot.rotation.x = Math.sin(t*1.3+Math.PI)*0.06;
+    u.legRPivot.rotation.x = Math.sin(t*1.3)*0.06;
+    if(u.aura) u.aura.rotation.z = t*0.5;
+  }
+  function animateCreatureIdle(g, t){
+    if(!g || !g.userData) return;
+    g.position.y = (g.userData.baseY||0) + Math.sin(t*2.1)*0.05;
+    g.rotation.z = Math.sin(t*1.4)*0.02;
+  }
+
+  return {
+    ensureThree:ensureThree, buildHumanoid:buildHumanoid, buildCreature:buildCreature,
+    triggerLunge:triggerLunge, triggerTelegraph:triggerTelegraph, triggerFlash:triggerFlash,
+    setDefendPose:setDefendPose, animateHumanoidIdle:animateHumanoidIdle, animateCreatureIdle:animateCreatureIdle
+  };
+})();
+
+/* ---- overworld 3D scene ---- */
+var Map3D = {
+  scene:null, camera:null, renderer:null, groundGroup:null, player:null,
+  raf:null, _lastTs:null, targetX:0, targetZ:0, curX:0, curZ:0, _justInit:false,
+  init: function(){
+    if(this.scene) return;
+    var T = window.THREE;
+    var canvas = $('map3d-canvas');
+    var renderer = new T.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    var scene = new T.Scene();
+    scene.fog = new T.Fog(0x0a0614, 8, 22);
+    var camera = new T.PerspectiveCamera(42,1,0.1,60);
+    var hemi = new T.HemisphereLight(0xcbb8ff,0x141022,0.6); scene.add(hemi);
+    var sun = new T.DirectionalLight(0xffe6b0,1.0); sun.position.set(4,7,3); scene.add(sun);
+    var ground = new T.Group(); scene.add(ground);
+    this.scene = scene; this.camera = camera; this.renderer = renderer; this.groundGroup = ground;
+    this.resize();
+    var self = this;
+    window.addEventListener('resize', function(){ self.resize(); });
+  },
+  colorForTile: function(t, alt){
+    switch(t){
+      case '.': return alt?0x264018:0x2b481c;
+      case ',': return alt?0x5c4630:0x654e36;
+      case 'V': case 'S': return alt?0x4a3d33:0x503f31;
+      case 'H': return alt?0x3a4a44:0x41544d;
+      case 'C': return alt?0x221f30:0x26233a;
+      case 'R': return alt?0x332a44:0x38304a;
+      case '~': return 0x1a4a63;
+      case '^': return 0x4b4a52;
+      case '#': return 0x16240f;
+      case 'B': return 0x2a0a12;
+      default: return 0x222222;
+    }
+  },
+  buildGround: function(){
+    var T = window.THREE;
+    if(!this.groundGroup || !MAP) return;
+    while(this.groundGroup.children.length) this.groundGroup.remove(this.groundGroup.children[0]);
+    var geo = new T.PlaneGeometry(1,1);
+    geo.rotateX(-Math.PI/2);
+    for(var y=0;y<MAP.H;y++){
+      for(var x=0;x<MAP.W;x++){
+        var t = MAP.grid[y][x];
+        var alt = (x+y)%2===0;
+        var mat = new T.MeshStandardMaterial({color:this.colorForTile(t,alt), roughness:0.95});
+        var tile = new T.Mesh(geo, mat);
+        tile.position.set(x,0,y);
+        this.groundGroup.add(tile);
+        if(t==='#'){
+          var trunk = new T.Mesh(new T.CylinderGeometry(0.06,0.08,0.35,5), new T.MeshStandardMaterial({color:0x3a2417}));
+          trunk.position.set(x,0.18,y);
+          var leaves = new T.Mesh(new T.SphereGeometry(0.34,8,6), new T.MeshStandardMaterial({color:0x1f5a1a}));
+          leaves.position.set(x,0.5,y);
+          this.groundGroup.add(trunk); this.groundGroup.add(leaves);
+        } else if(t==='^'){
+          var rock = new T.Mesh(new T.ConeGeometry(0.4,0.55,5), new T.MeshStandardMaterial({color:0x6b6a75}));
+          rock.position.set(x,0.27,y);
+          this.groundGroup.add(rock);
+        } else if(t==='S'){
+          var mark = new T.Mesh(new T.CylinderGeometry(0.18,0.18,0.05,10), new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.3}));
+          mark.position.set(x,0.05,y);
+          this.groundGroup.add(mark);
+        } else if(t==='H'){
+          var cross = new T.Mesh(new T.BoxGeometry(0.06,0.3,0.06), new T.MeshStandardMaterial({color:0x3fe0d0, emissive:0x3fe0d0, emissiveIntensity:0.4}));
+          cross.position.set(x,0.18,y);
+          this.groundGroup.add(cross);
+        } else if(t==='B'){
+          var portal = new T.Mesh(new T.TorusGeometry(0.32,0.05,8,16), new T.MeshStandardMaterial({color:0xd43c56, emissive:0xd43c56, emissiveIntensity:0.6}));
+          portal.rotation.x = Math.PI/2;
+          portal.position.set(x,0.4,y);
+          this.groundGroup.add(portal);
+        }
+      }
+    }
+  },
+  ensurePlayer: function(){
+    if(this.player || !this.scene) return;
+    var p = state.player; if(!p) return;
+    var pal = CLASS_PALETTE[p.cls] || CLASS_PALETTE.warrior;
+    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+    var rarity = getEquippedRarity(p);
+    var pal2 = { primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:RARITY_COLORS[rarity]||RARITY_COLORS.common };
+    this.player = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[p.cls]});
+    this.scene.add(this.player);
+  },
+  refreshPlayerAppearance: function(){
+    if(!this.player || !this.scene) return;
+    this.scene.remove(this.player);
+    this.player = null;
+    this.ensurePlayer();
+  },
+  resize: function(){
+    if(!this.renderer) return;
+    var wrap = $('map-wrap');
+    var w = wrap.clientWidth, h = wrap.clientHeight;
+    if(w<=0||h<=0) return;
+    this.renderer.setSize(w,h,false);
+    this.camera.aspect = w/h;
+    this.camera.updateProjectionMatrix();
+  },
+  syncPlayerTarget: function(){
+    var p = state.player; if(!p) return;
+    this.targetX = p.x; this.targetZ = p.y;
+    if(this._justInit){ this.curX=this.targetX; this.curZ=this.targetZ; this._justInit=false; }
+  },
+  start: function(){
+    var self = this;
+    Engine3D.ensureThree().then(function(){
+      self.init();
+      self.buildGround();
+      self.ensurePlayer();
+      self._justInit = true;
+      self.syncPlayerTarget();
+      $('map3d-canvas').classList.add('ready');
+      $('map-canvas').classList.add('faded-2d');
+      var glyph = $('player-glyph'); if(glyph) glyph.classList.add('faded-2d');
+      if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
+    }).catch(function(){ /* offline or blocked — classic 2D map stays fully playable */ });
+  },
+  tick: function(ts){
+    var self = this;
+    if(state.screen!=='game' || !this.renderer){ this.raf=null; return; }
+    if(!this._lastTs) this._lastTs = ts;
+    var dt = Math.min(0.05,(ts-this._lastTs)/1000);
+    this._lastTs = ts;
+    this.syncPlayerTarget();
+    this.curX += (this.targetX-this.curX)*Math.min(1,dt*10);
+    this.curZ += (this.targetZ-this.curZ)*Math.min(1,dt*10);
+    if(this.player){
+      this.player.position.set(this.curX,0,this.curZ);
+      Engine3D.animateHumanoidIdle(this.player, ts/1000);
+    }
+    this.camera.position.set(this.curX, 5.6, this.curZ+4.4);
+    this.camera.lookAt(this.curX, 0.6, this.curZ);
+    this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
+  }
+};
+
+/* ---- battle 3D scene ---- */
+var Battle3D = {
+  scene:null, camera:null, renderer:null, player:null, enemy:null, raf:null,
+  init: function(){
+    if(this.scene) return;
+    var T = window.THREE;
+    var canvas = $('battle3d-canvas');
+    var renderer = new T.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    var scene = new T.Scene();
+    scene.fog = new T.Fog(0x120a1f,5,13);
+    var camera = new T.PerspectiveCamera(42,1,0.1,40);
+    var hemi = new T.HemisphereLight(0xbfa8ff,0x14101f,0.55); scene.add(hemi);
+    var key = new T.DirectionalLight(0xffe6b0,1.1); key.position.set(2.5,4,3); scene.add(key);
+    var rim = new T.DirectionalLight(0x8a6fd6,0.6); rim.position.set(-3,2,-2); scene.add(rim);
+    var ground = new T.Mesh(new T.CircleGeometry(6,28), new T.MeshStandardMaterial({color:0x1c1330, roughness:0.92}));
+    ground.rotation.x = -Math.PI/2;
+    scene.add(ground);
+    this.scene = scene; this.camera = camera; this.renderer = renderer;
+    this.resize();
+    var self = this;
+    window.addEventListener('resize', function(){ self.resize(); });
+  },
+  resize: function(){
+    if(!this.renderer) return;
+    var wrap = $('arena-wrap');
+    var w = wrap.clientWidth, h = wrap.clientHeight;
+    if(w<=0||h<=0) return;
+    this.renderer.setSize(w,h,false);
+    this.camera.aspect = w/h;
+    this.camera.updateProjectionMatrix();
+  },
+  enemyColorFor: function(id){
+    var map = { wolf:0x6b6a75, goblin:0x4caf6b, bat:0x3a2a55, spider:0x2b2135, rat:0x8a6a4a,
+      stoneg:0x6b665c, dknight:0x2a2a34, smage:0x7a5fc9, golem2:0x5a4a3a, dragon:0xd43c56 };
+    return map[id] || 0x8a6fd6;
+  },
+  setup: function(enemy){
+    var self = this;
+    Engine3D.ensureThree().then(function(){
+      self.init();
+      var p = state.player;
+      var pal = CLASS_PALETTE[p.cls] || CLASS_PALETTE.warrior;
+      var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+      var rarity = getEquippedRarity(p);
+      var pal2 = { primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:RARITY_COLORS[rarity]||RARITY_COLORS.common };
+      if(self.player) self.scene.remove(self.player);
+      self.player = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[p.cls]});
+      self.player.userData._baseScale = 1;
+      self.scene.add(self.player);
+
+      if(self.enemy) self.scene.remove(self.enemy);
+      var seedColor = self.enemyColorFor(enemy.id);
+      self.enemy = Engine3D.buildCreature(enemy, seedColor);
+      self.enemy.userData._baseScale = self.enemy.scale.x;
+      self.scene.add(self.enemy);
+
+      $('battle3d-canvas').classList.add('ready');
+      $('enemy-sprite').classList.add('faded-2d');
+      $('hero-sprite').classList.add('faded-2d');
+      if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
+    }).catch(function(){ /* offline or blocked — classic 2D battle stays fully playable */ });
+  },
+  heroAttack: function(cls){ if(this.player) Engine3D.triggerLunge(this.player, cls==='heavy-attacking'?0.55:0.32); },
+  heroHurt: function(){ if(this.player) Engine3D.triggerFlash(this.player, 0xff5c78); },
+  heroDefend: function(active){ if(this.player) Engine3D.setDefendPose(this.player, active); },
+  enemyTelegraph: function(){ if(this.enemy) Engine3D.triggerTelegraph(this.enemy); },
+  enemyAttack: function(){ if(this.enemy) Engine3D.triggerLunge(this.enemy, -0.45); },
+  enemyHurt: function(){ if(this.enemy) Engine3D.triggerFlash(this.enemy, 0xffffff); },
+  tick: function(ts){
+    var self = this;
+    if(state.screen!=='battle' || !this.renderer){ this.raf=null; return; }
+    var t = ts/1000;
+    if(this.player && typeof arena !== 'undefined'){
+      this.player.position.x = (arena.heroX-0.5)*4.4;
+      this.player.position.z = (arena.heroY-0.5)*3.2;
+      this.player.rotation.y = 0.35;
+      Engine3D.animateHumanoidIdle(this.player, t);
+    }
+    if(this.enemy && typeof arena !== 'undefined'){
+      this.enemy.position.x = (arena.enemyX-0.5)*4.4;
+      this.enemy.position.z = (arena.enemyY-0.5)*3.2;
+      this.enemy.rotation.y = -0.5;
+      Engine3D.animateCreatureIdle(this.enemy, t);
+    }
+    this.camera.position.set(0,1.9,4.3);
+    this.camera.lookAt(0,1.0,-0.2);
+    this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
+  }
+};
+
+/* ============================================================
    INIT
    ============================================================ */
 function tryLockLandscape(){
@@ -4774,4 +5286,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-          </html>
+                                                           </html>
