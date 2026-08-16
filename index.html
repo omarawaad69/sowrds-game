@@ -1716,6 +1716,54 @@ document.addEventListener('DOMContentLoaded', solLockViewport);
 window.addEventListener('load', solLockViewport);
 
 /* ============================================================
+   PULL-TO-REFRESH KILLER
+   Chrome/Android WebView's native "pull down to refresh" gesture
+   fires whenever a downward drag isn't claimed by something
+   scrollable. CSS alone (touch-action / overscroll-behavior) has
+   proven unreliable here across builds — this intercepts the raw
+   touch gesture directly instead:
+     • finger is over something with NO scrollable ancestor
+       (joystick, dpad, canvas, buttons, empty screen area) →
+       block the gesture outright, every time, any direction.
+     • finger IS over a genuinely scrollable element (a modal
+       list, the character-creation list, etc.) → only step in
+       right at that element's own top/bottom edge, so normal
+       scrolling inside it is completely untouched.
+   ============================================================ */
+(function killPullToRefresh(){
+  var startY = 0;
+  function findScrollable(el){
+    while(el && el!==document.body && el!==document.documentElement){
+      if(el.scrollHeight > el.clientHeight + 2){
+        var cs = window.getComputedStyle(el);
+        if(cs.overflowY==='auto' || cs.overflowY==='scroll') return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+  document.addEventListener('touchstart', function(e){
+    if(e.touches.length!==1) return;
+    startY = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchmove', function(e){
+    if(e.touches.length!==1) return;
+    var y = e.touches[0].clientY;
+    var deltaY = y - startY;
+    var scrollEl = findScrollable(e.target);
+    if(!scrollEl){
+      e.preventDefault();
+      return;
+    }
+    if(scrollEl.scrollTop<=0 && deltaY>0){
+      e.preventDefault();
+    } else if((scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight-1) && deltaY<0){
+      e.preventDefault();
+    }
+  }, {passive:false});
+})();
+
+/* ============================================================
    DATA DEFINITIONS
    ============================================================ */
 var CLASSES = {
@@ -4112,18 +4160,18 @@ function setupLeagueJoystick(){
   });
 }
 
-function leagueStatsFor(cls, lvl){
+function leagueStatsFor(cls, lvl, isPlayer){
   var c = CLASSES[cls];
   var L = lvl || 1;
   return {
-    maxhp: Math.round(c.base.hp + c.growth.hp*(L-1)) + 40,
+    maxhp: Math.round(c.base.hp + c.growth.hp*(L-1)) + (isPlayer ? 85 : 40),
     atk: c.base.atk + c.growth.atk*(L-1),
     def: c.base.def + c.growth.def*(L-1),
     mag: c.base.mag + c.growth.mag*(L-1),
     spd: c.base.spd + c.growth.spd*(L-1)
   };
 }
-var LEAGUE_RANGE = { warrior:9, mage:22, archer:20 };
+var LEAGUE_RANGE = { warrior:9, mage:14, archer:13 };
 var LEAGUE_ABILITY_CD = { warrior:4, mage:5, archer:3.5 };
 var LEAGUE_ATK_CD = { warrior:0.85, mage:1.3, archer:0.7 };
 var LEAGUE_RESPAWN_SECONDS = 6;
@@ -4132,7 +4180,7 @@ function makeLeagueUnit(team, idx, cls, lvl){
   var isPlayer = (team==='blue' && idx===0);
   var baseX = team==='blue' ? 50 : 50;
   var baseY = team==='blue' ? 144 : 6;
-  var st = leagueStatsFor(cls, lvl);
+  var st = leagueStatsFor(cls, lvl, isPlayer);
   return {
     team:team, idx:idx, isPlayer:isPlayer,
     cls: cls,
@@ -4198,9 +4246,7 @@ function launchLeagueScreen(){
     showScreen('screen-league');
     var tip = $('league-tip');
     if(tip){
-      var seen = false;
-      try{ seen = localStorage.getItem('sol_league_tip_seen')==='1'; }catch(e){}
-      tip.classList.toggle('hidden', !!seen);
+      tip.classList.toggle('hidden', !!window._solLeagueTipDismissedThisSession);
     }
     requestAnimationFrame(function(){
       try{
@@ -4380,17 +4426,23 @@ function leagueUpdateMovement(dt){
         u.moving = true;
       }
     } else {
-      var nearEnemy = leagueNearestEnemy(u, LEAGUE_RANGE[u.cls]*1.3);
+      var nearEnemy = leagueNearestEnemy(u, LEAGUE_RANGE[u.cls]*1.6);
       if(nearEnemy){
-        // in combat range: hold ground and face target instead of chasing blindly
         u.facing = nearEnemy.x < u.x ? -1 : 1;
         var dHold = Math.hypot(nearEnemy.x-u.x, nearEnemy.y-u.y);
-        if(dHold < LEAGUE_RANGE[u.cls]*0.5){
-          // back off slightly to keep at range for casters/archers
+        var idealDist = LEAGUE_RANGE[u.cls]*0.72; // sweet spot: close enough to fight, not point-blank
+        if(dHold > idealDist + 2){
+          // not close enough yet to actually fight — advance toward the target
+          var ax = nearEnemy.x-u.x, ay = nearEnemy.y-u.y, al = Math.hypot(ax,ay)||1;
+          u.x += (ax/al)*speed*0.8*dt; u.y += (ay/al)*speed*0.8*dt;
+          u.moving = true;
+        } else if(dHold < idealDist - 3){
+          // too close (matters most for ranged classes) — back off a bit
           var bx = u.x-nearEnemy.x, by=u.y-nearEnemy.y, bl=Math.hypot(bx,by)||1;
           u.x += (bx/bl)*speed*0.4*dt; u.y += (by/bl)*speed*0.4*dt;
           u.moving = true;
         }
+        // otherwise already at a good fighting distance — hold position
       } else {
         // AI: pick highest-priority zone and move toward it
         var opp = u.team==='blue' ? 'red' : 'blue';
@@ -4422,8 +4474,9 @@ function leagueUpdateMovement(dt){
 function leagueDealDamage(attacker, target, mult, label){
   if(!target || target.ko) return;
   var isMag = attacker.cls==='mage';
-  var raw = (isMag ? attacker.mag*2.1 : attacker.atk*1.9) * (mult||1);
-  var dmg = Math.max(3, Math.round(raw - target.def*0.55));
+  var raw = (isMag ? attacker.mag*1.6 : attacker.atk*1.45) * (mult||1);
+  var def = target.def * (target.controlled==='me' ? 0.85 : 0.55); // player's armor counts for a bit more
+  var dmg = Math.max(2, Math.round(raw - def));
   target.hp -= dmg;
   target.flash = 0.18;
   league.floaters.push({ x:target.x, y:target.y-4, life:0.9, born:0, txt:'-'+dmg, crit:mult>1 });
@@ -4668,7 +4721,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
   var stepSwing = u.ko ? 0 : Math.sin(u.bob*2)*(u.moving?1:0.15);
   ctx.translate(0, bobY);
-  var r = (u.controlled==='me' ? 4.6 : 3.9) * T * scale;
+  var r = (u.controlled==='me' ? 4.15 : 3.9) * T * scale;
 
   // ground shadow
   ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.9, r*0.3, 0, 0, Math.PI*2);
@@ -5151,7 +5204,7 @@ function wireEvents(){
   $('btn-league-retreat').addEventListener('click', retreatFromLeague);
   $('league-tip-close').addEventListener('click', function(){
     $('league-tip').classList.add('hidden');
-    try{ localStorage.setItem('sol_league_tip_seen','1'); }catch(e){}
+    window._solLeagueTipDismissedThisSession = true;
   });
   $('btn-league-result-continue').addEventListener('click', closeLeagueResultAndContinue);
   function bindHold(id, key){
@@ -5779,4 +5832,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-  </html>
+                                                </html>
