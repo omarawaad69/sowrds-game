@@ -1015,7 +1015,7 @@ input{font-family:inherit;}
   padding:6px 12px;border-radius:9px;font-size:11.5px;font-weight:700;
   background:var(--bg-dark);border:1px solid var(--crimson-dark);color:var(--crimson-bright);
 }
-#league-wrap{ flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#league-wrap{ flex:1; min-height:220px; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 #league-canvas{ display:block; border-radius:6px; }
 .league-sweep-banner{
   position:absolute; top:14px; left:50%; transform:translateX(-50%);
@@ -1062,7 +1062,8 @@ input{font-family:inherit;}
 }
 @keyframes kfIn{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
 @keyframes kfOut{to{opacity:0;transform:translateX(12px);}}
-.lg-controls-row{ display:flex; align-items:center; justify-content:center; gap:18px; width:100%; }
+.lg-controls-row{ display:flex; align-items:flex-end; justify-content:center; gap:18px; width:100%; }
+.lg-ctrl-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
 #lg-special{
   width:64px;height:64px;border-radius:50%;flex-shrink:0;position:relative;
   background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-dim) 70%);
@@ -1073,6 +1074,23 @@ input{font-family:inherit;}
 #lg-special:active{ transform:scale(0.92); }
 #lg-special.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
 #lg-special .cd-num{ position:absolute; font-size:20px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+
+/* ---- first-run explainer banner: who you are + how the mode works ---- */
+.league-tip{
+  margin:0 10px 4px; padding:8px 10px; border-radius:12px; z-index:7;
+  background:linear-gradient(160deg, rgba(43,31,69,0.92), rgba(13,8,24,0.92));
+  border:1px solid var(--gold-dim);
+  display:flex; align-items:center; gap:8px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.4);
+}
+.league-tip-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.league-tip-body b{ font-size:11.5px; color:var(--gold-bright); }
+.league-tip-body span{ font-size:10.5px; color:var(--text-dim); line-height:1.5; }
+#league-tip-close{
+  flex-shrink:0; font-size:11px; font-weight:700; padding:7px 10px; border-radius:9px;
+  background:linear-gradient(180deg, var(--gold-bright), var(--gold-dim)); color:#241708;
+}
+.mini-hero.me{ box-shadow:0 0 0 2px var(--gold-bright), 0 0 10px rgba(255,224,138,0.65); }
 
 /* ---- online matchmaking waiting room ---- */
 .mp-wait-overlay{ position:fixed; inset:0; z-index:60; background:rgba(6,3,12,0.92); display:flex; align-items:center; justify-content:center; }
@@ -1420,6 +1438,13 @@ input{font-family:inherit;}
         <span class="zone-pip" id="lg-pip-r0"></span><span class="zone-pip" id="lg-pip-r1"></span><span class="zone-pip" id="lg-pip-r2"></span><span class="zone-pip" id="lg-pip-r3"></span><span class="zone-pip" id="lg-pip-r4"></span>
       </div>
     </div>
+    <div class="league-tip hidden" id="league-tip">
+      <div class="league-tip-body">
+        <b>أنت اللاعب صاحب الحلقة الذهبية 🟡 المضيئة والاسم "أنت"</b>
+        <span>🕹️ حرّك بالعصا يمين/شمال/فوق/تحت — هجومك تلقائي بمجرد ما تقرب من أي عدو (مفيش زرار هجوم عادي) — ⚔️ زرار القدرة الخاصة لضربة إضافية قوية — ادخل الرموز الملوّنة في الخريطة واقف جواها عشان تحتلها وتكسب الجولة.</span>
+      </div>
+      <button id="league-tip-close">فهمت ✕</button>
+    </div>
     <div class="roster-row" id="league-roster-blue"></div>
     <div id="league-wrap">
       <canvas id="league-canvas"></canvas>
@@ -1432,14 +1457,20 @@ input{font-family:inherit;}
     <div class="roster-row" id="league-roster-red"></div>
     <div id="league-controls">
       <div class="lg-controls-row">
-        <div class="dpad-wrap">
-          <div class="dpad">
-            <div class="empty"></div><button id="lg-up">▲</button><div class="empty"></div>
-            <button id="lg-left">◀</button><div class="empty"></div><button id="lg-right">▶</button>
-            <div class="empty"></div><button id="lg-down">▼</button><div class="empty"></div>
+        <div class="lg-ctrl-col">
+          <div class="dpad-wrap">
+            <div class="dpad">
+              <div class="empty"></div><button id="lg-up">▲</button><div class="empty"></div>
+              <button id="lg-left">◀</button><div class="empty"></div><button id="lg-right">▶</button>
+              <div class="empty"></div><button id="lg-down">▼</button><div class="empty"></div>
+            </div>
           </div>
+          <div class="joy-hint">تحرك — الهجوم تلقائي بالقرب من عدو</div>
         </div>
-        <button id="lg-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
+        <div class="lg-ctrl-col">
+          <button id="lg-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
+          <div class="joy-hint">قدرة خاصة</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1525,6 +1556,14 @@ function solLockViewport(){
   var h = Math.round(vv ? vv.height : window.innerHeight);
   if(!w || !h) return;
   var html = document.documentElement, body = document.body;
+  // skip the write entirely when nothing actually changed — this function
+  // used to run on every visualViewport "scroll" tick (see note below) and
+  // unconditionally re-writing html/body inline height/width on every tick
+  // forces a synchronous layout in the middle of whatever touch gesture is
+  // in progress, which is what was breaking scrolling inside modals (you
+  // could scroll down, but the reflow kept cancelling the reverse gesture).
+  if(solLockViewport._lastW===w && solLockViewport._lastH===h) return;
+  solLockViewport._lastW = w; solLockViewport._lastH = h;
   html.style.width = w+'px'; html.style.maxWidth = w+'px';
   html.style.height = h+'px'; html.style.maxHeight = h+'px';
   html.style.overflowX = 'hidden';
@@ -1542,7 +1581,13 @@ window.addEventListener('orientationchange', function(){
 });
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize', solLockViewport);
-  window.visualViewport.addEventListener('scroll', solLockViewport);
+  // NOTE: intentionally NOT listening to visualViewport's "scroll" event.
+  // Pinch-zoom is already disabled (user-scalable=no), so the only real use
+  // for it here would be keyboard-open panning, which "resize" already
+  // covers — but on several Android WebView/TWA builds this "scroll" event
+  // also fires from momentum-scrolling *inside* an ordinary nested div
+  // (e.g. the shop/character sheet lists), which made every scroll tick
+  // re-lock the outer viewport and made it impossible to scroll back up.
 }
 document.addEventListener('DOMContentLoaded', solLockViewport);
 window.addEventListener('load', solLockViewport);
@@ -3873,12 +3918,17 @@ function launchLeagueScreen(){
     renderLeagueRoster();
     updateLeagueSpecialBtn();
     showScreen('screen-league');
+    var tip = $('league-tip');
+    if(tip){
+      var seen = false;
+      try{ seen = localStorage.getItem('sol_league_tip_seen')==='1'; }catch(e){}
+      tip.classList.toggle('hidden', !!seen);
+    }
     requestAnimationFrame(function(){
       try{
-        setupLeagueCanvas(function(){
-          league.lastTs = performance.now();
-          requestAnimationFrame(leagueLoop);
-        });
+        setupLeagueCanvas();
+        league.lastTs = performance.now();
+        requestAnimationFrame(leagueLoop);
       }catch(err){
         console.error('League match failed to start:', err);
         toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
@@ -3911,7 +3961,7 @@ function renderLeagueRoster(){
   ['blue','red'].forEach(function(team){
     var wrap = $('league-roster-'+team);
     wrap.innerHTML = league.units.filter(function(u){ return u.team===team; }).map(function(u, i){
-      return '<div class="mini-hero '+team+'" id="mh-'+team+'-'+i+'">'+heroSVG(u.cls,'common')+
+      return '<div class="mini-hero '+team+(u.controlled==='me'?' me':'')+'" id="mh-'+team+'-'+i+'">'+heroSVG(u.cls,'common')+
              '<div class="mh-hp"><i style="width:100%"></i></div></div>';
     }).join('');
   });
@@ -3929,19 +3979,24 @@ function updateLeagueRosterHP(){
 }
 
 var LEAGUE_VIEW_UNITS_W = 26; // arena units visible across the screen width — lower = more zoomed in
-function setupLeagueCanvas(onReady, retryCount){
+function setupLeagueCanvas(){
   leagueCanvas = $('league-canvas');
   var wrap = $('league-wrap');
   var dpr = window.devicePixelRatio || 1;
   var cw = wrap.clientWidth, ch = wrap.clientHeight;
-  if((cw<10 || ch<10) && (retryCount||0) < 30){
-    // layout not settled yet (e.g. screen just became visible this tick) —
-    // try again on the next frame instead of building a 0-sized canvas that
-    // would make every zone/unit render at zero scale (invisible, but with
-    // no error thrown, so it would otherwise fail completely silently).
-    requestAnimationFrame(function(){ setupLeagueCanvas(onReady, (retryCount||0)+1); });
+  if(cw<=0 || ch<=0){
+    // the wrap hasn't been laid out yet (can happen right after the screen
+    // becomes visible, especially in a TWA where the first layout pass can
+    // land a frame late) — retry shortly instead of baking in a broken,
+    // zero-size canvas that would leave the arena permanently blank.
+    if(!setupLeagueCanvas._retries) setupLeagueCanvas._retries = 0;
+    if(setupLeagueCanvas._retries < 20){
+      setupLeagueCanvas._retries++;
+      requestAnimationFrame(setupLeagueCanvas);
+    }
     return;
   }
+  setupLeagueCanvas._retries = 0;
   leagueTile = cw / LEAGUE_VIEW_UNITS_W; // fixed zoom: pixels per arena unit
   leagueViewW = cw / leagueTile;  // arena units visible horizontally
   leagueViewH = ch / leagueTile;  // arena units visible vertically
@@ -3951,7 +4006,6 @@ function setupLeagueCanvas(onReady, retryCount){
   leagueCanvas.height = Math.round(ch*dpr);
   leagueCtx = leagueCanvas.getContext('2d');
   leagueCtx.setTransform(dpr,0,0,dpr,0,0);
-  if(onReady) onReady();
 }
 
 function leagueUpdateCamera(dt){
@@ -3967,52 +4021,33 @@ function leagueUpdateCamera(dt){
   league.camY = clamp(league.camY, Math.min(halfH, LEAGUE_ARENA.h/2), Math.max(LEAGUE_ARENA.h-halfH, LEAGUE_ARENA.h/2));
 }
 
-var leagueFrameErrorCount = 0;
 function leagueLoop(ts){
   if(!league || league.ended) return;
   var dt = Math.min(0.05, (ts - league.lastTs)/1000 || 0);
   league.lastTs = ts;
 
-  try{
-    if(league.online && !league.isHost){
-      // NON-HOST PEER: the host is the authority for combat/capture/timer — this
-      // device only predicts its own unit's movement locally for responsiveness
-      // and renders whatever the latest host snapshot says for everyone else.
-      leagueUpdateOwnUnitLocalOnly(dt);
-      leagueUpdateFx(dt);
-      leagueUpdateCamera(dt);
-      updateLeagueRosterHP();
-      updateLeagueSpecialBtn();
-      leagueDraw();
-      mpTickSendInput(dt);
-    } else {
-      leagueUpdateMovement(dt);
-      leagueUpdateCombat(dt);
-      leagueUpdateCapture(dt);
-      leagueUpdateTimer(dt);
-      leagueUpdateFx(dt);
-      leagueUpdateCamera(dt);
-      updateLeagueRosterHP();
-      updateLeagueSpecialBtn();
-      leagueDraw();
-      if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
-    }
-    leagueFrameErrorCount = 0;
-  }catch(err){
-    leagueFrameErrorCount++;
-    console.error('League frame error:', err);
-    if(leagueFrameErrorCount===1){
-      // first failure: try to keep the match alive, the next frame might recover
-      toast('⚠️ حدث خطأ أثناء رسم المعركة، جاري المحاولة مرة أخرى...');
-    }
-    if(leagueFrameErrorCount>=5){
-      // repeated failures in a row: stop trying so it doesn't hang forever on a blank frame
-      console.error('League loop aborted after repeated frame errors.');
-      toast('❌ تعذر تشغيل معركة الدوري بسبب خطأ تقني، تم إنهاء المباراة');
-      if(league) league.ended = true;
-      exitLeagueToTitle();
-      return;
-    }
+  if(league.online && !league.isHost){
+    // NON-HOST PEER: the host is the authority for combat/capture/timer — this
+    // device only predicts its own unit's movement locally for responsiveness
+    // and renders whatever the latest host snapshot says for everyone else.
+    leagueUpdateOwnUnitLocalOnly(dt);
+    leagueUpdateFx(dt);
+    leagueUpdateCamera(dt);
+    updateLeagueRosterHP();
+    updateLeagueSpecialBtn();
+    leagueDraw();
+    mpTickSendInput(dt);
+  } else {
+    leagueUpdateMovement(dt);
+    leagueUpdateCombat(dt);
+    leagueUpdateCapture(dt);
+    leagueUpdateTimer(dt);
+    leagueUpdateFx(dt);
+    leagueUpdateCamera(dt);
+    updateLeagueRosterHP();
+    updateLeagueSpecialBtn();
+    leagueDraw();
+    if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
   }
 
   if(!league.ended) requestAnimationFrame(leagueLoop);
@@ -4512,6 +4547,7 @@ function leagueDrawMinimap(ctx, canvasW){
 }
 
 function leagueDraw(){
+  if(!leagueCtx || !leagueCanvas) return; // canvas still settling (setupLeagueCanvas retry) — skip this frame, not a crash
   var ctx = leagueCtx, T = leagueTile;
   var W = leagueCanvas.clientWidth, H = leagueCanvas.clientHeight;
   var camX = league.camX==null ? LEAGUE_ARENA.w/2 : league.camX;
@@ -4782,6 +4818,10 @@ function wireEvents(){
   $('mp-wait-cancel').addEventListener('click', cancelOnlineWait);
   $('lg-special').addEventListener('click', useLeagueSpecial);
   $('btn-league-retreat').addEventListener('click', retreatFromLeague);
+  $('league-tip-close').addEventListener('click', function(){
+    $('league-tip').classList.add('hidden');
+    try{ localStorage.setItem('sol_league_tip_seen','1'); }catch(e){}
+  });
   $('btn-league-result-continue').addEventListener('click', closeLeagueResultAndContinue);
   function bindHold(id, key){
     var el = $(id);
@@ -5127,7 +5167,13 @@ var Map3D = {
     if(!this.renderer) return;
     var wrap = $('map-wrap');
     var w = wrap.clientWidth, h = wrap.clientHeight;
-    if(w<=0||h<=0) return;
+    if(w<=0||h<=0){
+      var self = this;
+      if(!this._resizeRetries) this._resizeRetries = 0;
+      if(this._resizeRetries < 20){ this._resizeRetries++; requestAnimationFrame(function(){ self.resize(); }); }
+      return;
+    }
+    this._resizeRetries = 0;
     this.renderer.setSize(w,h,false);
     this.camera.aspect = w/h;
     this.camera.updateProjectionMatrix();
@@ -5198,7 +5244,16 @@ var Battle3D = {
     if(!this.renderer) return;
     var wrap = $('arena-wrap');
     var w = wrap.clientWidth, h = wrap.clientHeight;
-    if(w<=0||h<=0) return;
+    if(w<=0||h<=0){
+      // arena-wrap can still be mid-layout right after showScreen() on the very
+      // first battle (before a paint has happened) — retry next frame instead
+      // of silently keeping the renderer at its default 300×150 canvas size.
+      var self = this;
+      if(!this._resizeRetries) this._resizeRetries = 0;
+      if(this._resizeRetries < 20){ this._resizeRetries++; requestAnimationFrame(function(){ self.resize(); }); }
+      return;
+    }
+    this._resizeRetries = 0;
     this.renderer.setSize(w,h,false);
     this.camera.aspect = w/h;
     this.camera.updateProjectionMatrix();
