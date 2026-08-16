@@ -3875,9 +3875,10 @@ function launchLeagueScreen(){
     showScreen('screen-league');
     requestAnimationFrame(function(){
       try{
-        setupLeagueCanvas();
-        league.lastTs = performance.now();
-        requestAnimationFrame(leagueLoop);
+        setupLeagueCanvas(function(){
+          league.lastTs = performance.now();
+          requestAnimationFrame(leagueLoop);
+        });
       }catch(err){
         console.error('League match failed to start:', err);
         toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
@@ -3928,11 +3929,19 @@ function updateLeagueRosterHP(){
 }
 
 var LEAGUE_VIEW_UNITS_W = 26; // arena units visible across the screen width — lower = more zoomed in
-function setupLeagueCanvas(){
+function setupLeagueCanvas(onReady, retryCount){
   leagueCanvas = $('league-canvas');
   var wrap = $('league-wrap');
   var dpr = window.devicePixelRatio || 1;
   var cw = wrap.clientWidth, ch = wrap.clientHeight;
+  if((cw<10 || ch<10) && (retryCount||0) < 30){
+    // layout not settled yet (e.g. screen just became visible this tick) —
+    // try again on the next frame instead of building a 0-sized canvas that
+    // would make every zone/unit render at zero scale (invisible, but with
+    // no error thrown, so it would otherwise fail completely silently).
+    requestAnimationFrame(function(){ setupLeagueCanvas(onReady, (retryCount||0)+1); });
+    return;
+  }
   leagueTile = cw / LEAGUE_VIEW_UNITS_W; // fixed zoom: pixels per arena unit
   leagueViewW = cw / leagueTile;  // arena units visible horizontally
   leagueViewH = ch / leagueTile;  // arena units visible vertically
@@ -3942,6 +3951,7 @@ function setupLeagueCanvas(){
   leagueCanvas.height = Math.round(ch*dpr);
   leagueCtx = leagueCanvas.getContext('2d');
   leagueCtx.setTransform(dpr,0,0,dpr,0,0);
+  if(onReady) onReady();
 }
 
 function leagueUpdateCamera(dt){
@@ -3957,33 +3967,52 @@ function leagueUpdateCamera(dt){
   league.camY = clamp(league.camY, Math.min(halfH, LEAGUE_ARENA.h/2), Math.max(LEAGUE_ARENA.h-halfH, LEAGUE_ARENA.h/2));
 }
 
+var leagueFrameErrorCount = 0;
 function leagueLoop(ts){
   if(!league || league.ended) return;
   var dt = Math.min(0.05, (ts - league.lastTs)/1000 || 0);
   league.lastTs = ts;
 
-  if(league.online && !league.isHost){
-    // NON-HOST PEER: the host is the authority for combat/capture/timer — this
-    // device only predicts its own unit's movement locally for responsiveness
-    // and renders whatever the latest host snapshot says for everyone else.
-    leagueUpdateOwnUnitLocalOnly(dt);
-    leagueUpdateFx(dt);
-    leagueUpdateCamera(dt);
-    updateLeagueRosterHP();
-    updateLeagueSpecialBtn();
-    leagueDraw();
-    mpTickSendInput(dt);
-  } else {
-    leagueUpdateMovement(dt);
-    leagueUpdateCombat(dt);
-    leagueUpdateCapture(dt);
-    leagueUpdateTimer(dt);
-    leagueUpdateFx(dt);
-    leagueUpdateCamera(dt);
-    updateLeagueRosterHP();
-    updateLeagueSpecialBtn();
-    leagueDraw();
-    if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
+  try{
+    if(league.online && !league.isHost){
+      // NON-HOST PEER: the host is the authority for combat/capture/timer — this
+      // device only predicts its own unit's movement locally for responsiveness
+      // and renders whatever the latest host snapshot says for everyone else.
+      leagueUpdateOwnUnitLocalOnly(dt);
+      leagueUpdateFx(dt);
+      leagueUpdateCamera(dt);
+      updateLeagueRosterHP();
+      updateLeagueSpecialBtn();
+      leagueDraw();
+      mpTickSendInput(dt);
+    } else {
+      leagueUpdateMovement(dt);
+      leagueUpdateCombat(dt);
+      leagueUpdateCapture(dt);
+      leagueUpdateTimer(dt);
+      leagueUpdateFx(dt);
+      leagueUpdateCamera(dt);
+      updateLeagueRosterHP();
+      updateLeagueSpecialBtn();
+      leagueDraw();
+      if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
+    }
+    leagueFrameErrorCount = 0;
+  }catch(err){
+    leagueFrameErrorCount++;
+    console.error('League frame error:', err);
+    if(leagueFrameErrorCount===1){
+      // first failure: try to keep the match alive, the next frame might recover
+      toast('⚠️ حدث خطأ أثناء رسم المعركة، جاري المحاولة مرة أخرى...');
+    }
+    if(leagueFrameErrorCount>=5){
+      // repeated failures in a row: stop trying so it doesn't hang forever on a blank frame
+      console.error('League loop aborted after repeated frame errors.');
+      toast('❌ تعذر تشغيل معركة الدوري بسبب خطأ تقني، تم إنهاء المباراة');
+      if(league) league.ended = true;
+      exitLeagueToTitle();
+      return;
+    }
   }
 
   if(!league.ended) requestAnimationFrame(leagueLoop);
@@ -5286,4 +5315,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-                                                           </html>
+  </html>
