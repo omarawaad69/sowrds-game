@@ -82,16 +82,24 @@ input{font-family:inherit;}
 }
 @media (orientation:landscape){
   #app{ max-width:none; }
-  .screen:not(#screen-game):not(#screen-battle):not(#screen-league){
+  .screen:not(#screen-game):not(#screen-battle):not(#screen-league):not(#screen-league-showcase){
     left:0; right:0; width:560px; max-width:92vw; margin:0 auto; transform:none;
   }
-  /* battle screens go fully edge-to-edge/widescreen in landscape — no centered column */
-  #screen-battle, #screen-league{ width:100%; max-width:none; left:0; right:0; }
+  /* battle / league screens go fully edge-to-edge/widescreen in landscape — no centered column
+     (this must include #screen-league-showcase — the 5×5 team lineup screen — otherwise it gets
+     boxed into the narrow centered column above and shows black bars down both sides) */
+  #screen-battle, #screen-league, #screen-league-showcase{ width:100%; max-width:none; left:0; right:0; }
 }
 .screen{
   position:absolute;inset:0;
   display:flex;flex-direction:column;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
+  /* belt-and-suspenders against native WebView pull-to-refresh: contain scroll chaining
+     so an overscroll at the top/bottom of a screen never bubbles up to the WebView's own
+     gesture handling. This works together with killPullToRefresh() in the script below —
+     see the note near that function for why a *native* Android-side fix is still the only
+     fully "radical" (100%) solution in a WebView-wrapped app like this one. */
+  overscroll-behavior-y:contain;
   animation:fadeIn .35s ease;
 }
 #screen-battle{
@@ -140,7 +148,17 @@ input{font-family:inherit;}
 
 /* ============================= LEAGUE HERO SHOWCASE ============================= */
 #screen-league-showcase{
-  position:relative; align-items:center; overflow:hidden;
+  /* NOTE: deliberately does NOT override position/overflow from the base .screen rule
+     above (position:absolute;inset:0; overflow-y:auto). It used to set
+     position:relative + overflow:hidden here, which broke inset:0 sizing and — combined
+     with #app's own overflow:hidden — silently CLIPPED any content taller than the
+     viewport instead of letting it scroll. That's why the bottom of this screen (hero
+     stars/level row + the "دخول المعركة" button) could get cut off with no way to reach
+     it. Keeping position:absolute + overflow-y:auto here fixes that at the root: if the
+     5 hero cards + confirm button ever need more height than the screen has (e.g. a very
+     short landscape phone), the screen now scrolls to reveal the rest instead of clipping it. */
+  align-items:center;
+  overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
   background:radial-gradient(ellipse at 50% 20%, #241a3a 0%, #0b0714 62%, #050308 100%);
 }
 .lgs-bg{ position:absolute; inset:0; z-index:0; }
@@ -196,6 +214,11 @@ input{font-family:inherit;}
 .lgs-hero-card{
   display:flex; flex-direction:column; align-items:center; gap:6px;
   cursor:pointer; transition:transform .25s ease; flex:1; max-width:19%;
+  /* min-width:0 lets flexbox actually shrink these below their intrinsic/aspect-ratio
+     content size when all 5 cards don't quite fit the row — without it the 5th card
+     (or the wide "leader" card) was being pushed past the right edge and clipped
+     instead of shrinking, which is why a hero card could render partly off-screen. */
+  min-width:0;
 }
 .lgs-hero-card.leader{ max-width:26%; z-index:3; }
 .lgs-hero-card:active{ transform:scale(0.96); }
@@ -248,6 +271,21 @@ input{font-family:inherit;}
   box-shadow:0 6px 0 #5c4310, 0 10px 22px rgba(224,184,76,0.35);
 }
 .lgs-confirm:active{ transform:translateY(4px); box-shadow:0 2px 0 #5c4310; }
+
+/* compact spacing on short landscape phones (most real devices in landscape) so the
+   whole showcase — topbar, banner, power row, hero row, confirm button — fits in view
+   without needing to scroll at all; scrolling above still covers anything shorter still */
+@media (max-height:420px){
+  .lgs-topbar{ padding-top:max(6px, env(safe-area-inset-top,0px)); padding-bottom:4px; }
+  .lgs-title{ font-size:14px; }
+  .lgs-banner{ margin:2px auto 0; }
+  .lgs-power-row{ margin:4px auto 2px; padding:4px 14px; }
+  .lgs-power-num{ font-size:14px; }
+  .lgs-heroes{ padding:4px 4px 2px; }
+  .lgs-hero-name{ font-size:9.5px; }
+  .lgs-hero-detail{ min-height:0; margin:4px auto 2px; padding:5px 12px; font-size:10.5px; }
+  .lgs-confirm{ padding:10px; margin:4px auto max(8px, env(safe-area-inset-bottom,0px)); }
+}
 
 
 /* ============================= TITLE SCREEN ============================= */
@@ -481,7 +519,7 @@ input{font-family:inherit;}
   box-shadow:0 4px 0 rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
   touch-action:none;
 }
-.dpad button:active{background:linear-gradient(180deg, var(--gold), var(--gold-dim));color:#221708;transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,0.35);}
+.dpad button:active, .dpad button.dp-held{background:linear-gradient(180deg, var(--gold), var(--gold-dim));color:#221708;transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,0.35);}
 .dpad .empty{background:transparent;border:none;box-shadow:none;}
 .action-group{display:flex;align-items:flex-end;gap:14px;}
 .action-col{display:flex;flex-direction:column;gap:10px;align-items:center;}
@@ -1226,7 +1264,12 @@ input{font-family:inherit;}
   background:var(--bg-dark);border:1px solid var(--crimson-dark);color:var(--crimson-bright);
 }
 #league-wrap{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#league-canvas{ display:block; width:100%; height:100%; }
+#league-canvas-3d{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:1;opacity:0;transition:opacity .6s ease;pointer-events:none;
+}
+#league-canvas-3d.ready{opacity:1;}
+#league-canvas{ position:relative; z-index:2; display:block; width:100%; height:100%; }
 .league-sweep-banner{
   position:absolute; top:14px; left:50%; transform:translateX(-50%);
   z-index:12; text-align:center; pointer-events:none;
@@ -1693,6 +1736,7 @@ input{font-family:inherit;}
   <!-- ============================= LEAGUE BATTLE (5×5 FLAG CAPTURE) ============================= -->
   <div id="screen-league" class="screen hidden">
     <div id="league-wrap">
+      <canvas id="league-canvas-3d"></canvas>
       <canvas id="league-canvas"></canvas>
       <div class="league-sweep-banner hidden" id="league-sweep-banner">
         <div class="num" id="league-sweep-num">20</div>
@@ -1868,6 +1912,26 @@ window.addEventListener('load', solLockViewport);
        list, the character-creation list, etc.) → only step in
        right at that element's own top/bottom edge, so normal
        scrolling inside it is completely untouched.
+
+   ⚠️ IMPORTANT — why this can only get you to ~95%, not 100%:
+   Everything in this <script> block runs *inside* the WebView's
+   page. If the Android app (MainActivity / the native project
+   this HTML is packaged into — not part of this web bundle) wraps
+   the WebView in an Android SwipeRefreshLayout, or the WebView's
+   own settings enable overscroll/edge-glow, that native container
+   sits ABOVE the page in the view hierarchy and can intercept the
+   drag via onInterceptTouchEvent() before it ever reaches the
+   page's own touch handling — at that point e.preventDefault()
+   here has nothing left to prevent. If pull-to-refresh still
+   happens after this fix (only at the very top of a screen, as a
+   full-page reload — not the same as normal scrolling misbehaving),
+   that's what's going on, and the actual fix has to be on the
+   native Android side, e.g.:
+     • if using SwipeRefreshLayout: swipeRefreshLayout.setEnabled(false)
+       (this app never needs pull-to-refresh, so it's safe to just
+       turn it off entirely), or
+     • if it's the WebView's own overscroll glow, not a
+       SwipeRefreshLayout: webView.setOverScrollMode(View.OVER_SCROLL_NEVER)
    ============================================================ */
 (function killPullToRefresh(){
   var startY = 0;
@@ -4460,6 +4524,10 @@ function launchLeagueScreen(){
         setupLeagueCanvas();
         league.lastTs = performance.now();
         requestAnimationFrame(leagueLoop);
+        // additive 3D layer for the 5×5 arena — purely visual, never touches
+        // league state/combat logic; if three.js fails to load (offline etc.)
+        // the flat 2D arena above keeps working exactly as before.
+        if(window.League3D) League3D.start();
       }catch(err){
         console.error('League match failed to start:', err);
         toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
@@ -4923,6 +4991,10 @@ function leagueUpdateTimer(dt){
 function leagueDrawUnitBody(ctx, u, T, scale){
   var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
   var teamGlow = u.team==='blue' ? '#3fe0d0' : '#d43c56';
+  // when League3D is up, the actual character body/limbs/weapon/cape are rendered by
+  // the WebGL layer underneath — this function then only keeps the still-useful flat
+  // HUD bits (nameplate, HP bar, KO countdown) so they stay crisp and legible on top.
+  var use3D = window.League3D && League3D.ready;
   ctx.save();
   ctx.translate(u.x*T, u.y*T);
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
@@ -4930,6 +5002,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   ctx.translate(0, bobY);
   var r = (u.controlled==='me' ? 4.15 : 3.9) * T * scale;
 
+  if(!use3D){
   // ground shadow
   ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.9, r*0.3, 0, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
@@ -5029,6 +5102,8 @@ function leagueDrawUnitBody(ctx, u, T, scale){
     ctx.beginPath(); ctx.arc(0, r*0.05, r*0.72, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
   }
   ctx.globalAlpha = 1;
+  } // !use3D
+
   ctx.restore();
 
   if(u.ko){
@@ -5142,14 +5217,22 @@ function leagueDraw(){
   var W = leagueCanvas.clientWidth, H = leagueCanvas.clientHeight;
   var camX = league.camX==null ? LEAGUE_ARENA.w/2 : league.camX;
   var camY = league.camY==null ? LEAGUE_ARENA.h/2 : league.camY;
+  // when the 3D layer (League3D) is up and rendering, this 2D canvas switches to a
+  // transparent HUD-only mode: it keeps drawing zones/capture-rings/fx/floaters/minimap
+  // (all still genuinely useful as a crisp top-down HUD) but skips the flat background
+  // fill, the ground grid, and the old flat character sprites — the 3D scene supplies
+  // the ground and the actual character models underneath this canvas instead.
+  var use3D = window.League3D && League3D.ready;
 
   // background is drawn in flat screen space first (no camera offset) so it
   // always fully covers the canvas regardless of where the camera is panned
   ctx.setTransform((window.devicePixelRatio||1),0,0,(window.devicePixelRatio||1),0,0);
   ctx.clearRect(0,0,W,H);
-  var grad = ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0, '#1a1024'); grad.addColorStop(1, '#0e0a18');
-  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+  if(!use3D){
+    var grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, '#1a1024'); grad.addColorStop(1, '#0e0a18');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+  }
 
   ctx.save();
   if(league.shake>0){
@@ -5158,10 +5241,13 @@ function leagueDraw(){
   // camera: shift world so (camX,camY) lands at screen center
   ctx.translate(W/2 - camX*T, H/2 - camY*T);
 
-  // faint ground grid for depth
-  ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth=1;
-  for(var gx=0; gx<=LEAGUE_ARENA.w; gx+=6){ ctx.beginPath(); ctx.moveTo(gx*T,0); ctx.lineTo(gx*T,LEAGUE_ARENA.h*T); ctx.stroke(); }
-  for(var gy=0; gy<=LEAGUE_ARENA.h; gy+=6){ ctx.beginPath(); ctx.moveTo(0,gy*T); ctx.lineTo(LEAGUE_ARENA.w*T,gy*T); ctx.stroke(); }
+  if(!use3D){
+    // faint ground grid for depth (the 3D scene has its own ground/grid, so this is
+    // only drawn when falling back to the flat 2D renderer)
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth=1;
+    for(var gx=0; gx<=LEAGUE_ARENA.w; gx+=6){ ctx.beginPath(); ctx.moveTo(gx*T,0); ctx.lineTo(gx*T,LEAGUE_ARENA.h*T); ctx.stroke(); }
+    for(var gy=0; gy<=LEAGUE_ARENA.h; gy+=6){ ctx.beginPath(); ctx.moveTo(0,gy*T); ctx.lineTo(LEAGUE_ARENA.w*T,gy*T); ctx.stroke(); }
+  }
   // arena border so the edge of the map reads clearly when panned to a corner
   ctx.strokeStyle = 'rgba(255,208,120,0.25)'; ctx.lineWidth=2;
   ctx.strokeRect(0,0, LEAGUE_ARENA.w*T, LEAGUE_ARENA.h*T);
@@ -5185,7 +5271,10 @@ function leagueDraw(){
     ctx.fillText(z.id, px, py);
   });
 
-  // units — KO'd units drawn faint first, alive units drawn after (so they render on top)
+  // units — KO'd units drawn faint first, alive units drawn after (so they render on top).
+  // leagueDrawUnitBody itself skips the actual body/limbs/weapon when use3D is active
+  // (the 3D layer renders those) and only draws the KO countdown text, keeping that
+  // useful bit of HUD info either way.
   league.units.filter(function(u){return u.ko;}).forEach(function(u){ leagueDrawUnitBody(ctx, u, T, 1); });
   league.units.filter(function(u){return !u.ko;}).forEach(function(u){ leagueDrawUnitBody(ctx, u, T, 1); });
 
@@ -5241,6 +5330,7 @@ function closeLeagueResultAndContinue(){
 function exitLeagueToTitle(){
   mpCleanup();
   league = null;
+  if(window.League3D) League3D.stop();
   showScreen('screen-title');
   refreshTitleButtons();
 }
@@ -5302,10 +5392,55 @@ function wireEvents(){
   // dpad (mapped to intuitive on-screen directions: left button = move toward
   // the visual left of the canvas, i.e. -x, matching the grid's own east=+x
   // orientation which is drawn left-to-right by the canvas regardless of page dir="rtl")
-  $('dp-up').addEventListener('click', function(){ tryMove(0,-1); });
-  $('dp-down').addEventListener('click', function(){ tryMove(0,1); });
-  $('dp-left').addEventListener('click', function(){ tryMove(-1,0); });
-  $('dp-right').addEventListener('click', function(){ tryMove(1,0); });
+  //
+  // NOTE: this used to be wired with plain 'click' listeners only. On Android
+  // WebView that's unreliable for a game d-pad: click is a *synthetic* event
+  // fired after touchstart/touchend, and if the finger drifts even a couple
+  // pixels during the tap (very common — that's basically what a "bad" or
+  // "stuck" direction button feels like to a player) some WebView builds
+  // silently drop the click entirely, so the press does nothing. It also
+  // only ever moves one tile per tap — holding the button did nothing.
+  // bindDpadButton fixes both: it fires the first move immediately on
+  // pointerdown (not on release), then repeats smoothly while held, using
+  // pointer capture so a slight finger drift can't cancel the press.
+  function bindDpadButton(id, dx, dy){
+    var el = $(id);
+    if(!el) return;
+    var repeatTimer = null, startTimer = null;
+    function fire(){ tryMove(dx,dy); }
+    function start(ev){
+      if(ev.cancelable) ev.preventDefault();
+      if(el._solActive) return; // already pressed (e.g. duplicate pointer) — ignore
+      el._solActive = true;
+      if(el.setPointerCapture && ev.pointerId!=null){
+        try{ el.setPointerCapture(ev.pointerId); }catch(e){}
+      }
+      el.classList.add('dp-held');
+      fire(); // move immediately — no waiting for release
+      clearTimeout(startTimer); clearInterval(repeatTimer);
+      // brief pause before repeat kicks in, then repeat at a steady walking pace
+      startTimer = setTimeout(function(){
+        repeatTimer = setInterval(fire, 160);
+      }, 320);
+    }
+    function stop(){
+      if(!el._solActive) return;
+      el._solActive = false;
+      el.classList.remove('dp-held');
+      clearTimeout(startTimer); clearInterval(repeatTimer);
+    }
+    el.addEventListener('pointerdown', start);
+    el.addEventListener('pointerup', stop);
+    el.addEventListener('pointercancel', stop);
+    el.addEventListener('pointerleave', function(ev){ if(ev.pointerType!=='touch') stop(); });
+    // keep 'click' as a harmless no-op fallback so nothing double-fires if a
+    // platform still synthesizes one — pointerdown already did the real work
+    el.addEventListener('click', function(ev){ ev.preventDefault(); });
+  }
+  bindDpadButton('dp-up', 0,-1);
+  bindDpadButton('dp-down', 0,1);
+  bindDpadButton('dp-left', -1,0);
+  bindDpadButton('dp-right', 1,0);
 
   $('btn-inventory').addEventListener('click', openInventory);
   $('btn-character').addEventListener('click', openCharacterScreen);
@@ -5498,6 +5633,8 @@ var Engine3D = (function(){
     var belt = castRecv(new T.Mesh(new T.TorusGeometry(0.335,0.028,6,16), mMetal));
     belt.rotation.x = Math.PI/2; belt.position.y = 0.90;
     g.add(belt);
+    var beltGem = new T.Mesh(new T.OctahedronGeometry(0.045,0), mGlow);
+    beltGem.position.set(0,0.90,0.335); g.add(beltGem);
 
     // ---- neck / head ----
     var neck = castRecv(new T.Mesh(new T.CylinderGeometry(0.09,0.11,0.12,8), mSkin));
@@ -5549,17 +5686,25 @@ var Engine3D = (function(){
     var armRPivot = new T.Group(); armRPivot.position.set(0.40,shoulderY,0);
     var armR = castRecv(new T.Mesh(armGeo, mSkin)); armR.position.set(0,-0.34,0); armRPivot.add(armR);
     var handR = castRecv(new T.Mesh(handGeo, mSkin)); handR.position.set(0,-0.70,0); armRPivot.add(handR);
+    // ---- vambraces (forearm guards) — small added-detail pass so the arms
+    // don't read as bare cylinders at close range ----
+    var vambGeo = new T.CylinderGeometry(0.082,0.078,0.16,8);
+    var vambL = castRecv(new T.Mesh(vambGeo, mMetal)); vambL.position.set(0,-0.52,0); armLPivot.add(vambL);
+    var vambR = castRecv(new T.Mesh(vambGeo, mMetal)); vambR.position.set(0,-0.52,0); armRPivot.add(vambR);
     g.add(armLPivot); g.add(armRPivot);
 
     // ---- legs + boots ----
     var hipY = 0.72;
     var legGeo = new T.CylinderGeometry(0.10,0.088,0.62,8);
     var bootGeo = new T.CylinderGeometry(0.105,0.115,0.20,8);
+    var greaveGeo = new T.CylinderGeometry(0.098,0.094,0.20,8);
     var legLPivot = new T.Group(); legLPivot.position.set(-0.15,hipY,0);
     var legL = castRecv(new T.Mesh(legGeo, mSecondary)); legL.position.set(0,-0.31,0); legLPivot.add(legL);
+    var greaveL = castRecv(new T.Mesh(greaveGeo, mMetal)); greaveL.position.set(0,-0.48,0); legLPivot.add(greaveL);
     var bootL = castRecv(new T.Mesh(bootGeo, mLeather)); bootL.position.set(0,-0.66,0.03); legLPivot.add(bootL);
     var legRPivot = new T.Group(); legRPivot.position.set(0.15,hipY,0);
     var legR = castRecv(new T.Mesh(legGeo, mSecondary)); legR.position.set(0,-0.31,0); legRPivot.add(legR);
+    var greaveR = castRecv(new T.Mesh(greaveGeo, mMetal)); greaveR.position.set(0,-0.48,0); legRPivot.add(greaveR);
     var bootR = castRecv(new T.Mesh(bootGeo, mLeather)); bootR.position.set(0,-0.66,0.03); legRPivot.add(bootR);
     g.add(legLPivot); g.add(legRPivot);
 
@@ -5611,6 +5756,22 @@ var Engine3D = (function(){
     cape.rotation.x = 0.18;
     g.add(cape);
 
+    // ---- optional back banner/pennant: only built when opts.banner is a color, used
+    // in the 5×5 league arena so a top-down camera can instantly tell teams apart even
+    // at a glance, without needing to touch the flat 2D HUD markers ----
+    var banner = null;
+    if(opts.banner!=null){
+      banner = new T.Group();
+      var pole = castRecv(new T.Mesh(new T.CylinderGeometry(0.018,0.018,0.62,6), mMetal));
+      pole.position.y = 0.31; banner.add(pole);
+      var flagMat = new T.MeshStandardMaterial({color:opts.banner, emissive:opts.banner, emissiveIntensity:0.35, roughness:0.6, side:T.DoubleSide});
+      var flag = castRecv(new T.Mesh(new T.PlaneGeometry(0.30,0.22,3,2), flagMat));
+      flag.position.set(0.16,0.53,0); banner.add(flag);
+      banner.position.set(0,1.30,-0.24);
+      banner.rotation.x = -0.12;
+      g.add(banner);
+    }
+
     // ---- chest crest ----
     var chestCrest = new T.Mesh(new T.OctahedronGeometry(0.06,0), mGlow);
     chestCrest.position.set(0,1.30,0.31);
@@ -5629,7 +5790,7 @@ var Engine3D = (function(){
     g.userData = {
       torso:torso, head:head, legLPivot:legLPivot, legRPivot:legRPivot,
       armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, aura2:aura2, cape:cape,
-      chestCrest:chestCrest, weaponGlow:weaponGlow, defending:false,
+      chestCrest:chestCrest, weaponGlow:weaponGlow, banner:banner, defending:false,
       flashables:[mSkin, mPrimary, mSecondary, mMetal]
     };
     return g;
@@ -5805,21 +5966,31 @@ var Engine3D = (function(){
   function animateHumanoidIdle(g, t, moving){
     if(!g || !g.userData || !g.userData.armLPivot) return;
     var u = g.userData;
+    // a punchier, more readable walk cycle than before (bigger swing arcs +
+    // a slight forward torso lean while moving) so motion reads clearly even
+    // at the smaller on-screen scale used in the 5×5 league arena
     var amp = moving ? 1 : 0.32;
-    var speed = moving ? 4.2 : 1.3;
+    var speed = moving ? 4.6 : 1.3;
     g.position.y = Math.sin(t*1.6)*0.025;
-    if(u.torso) u.torso.scale.y = 1 + Math.sin(t*2.1)*0.012;
+    if(u.torso){
+      u.torso.scale.y = 1 + Math.sin(t*2.1)*0.012;
+      u.torso.rotation.x = moving ? 0.09 : 0;
+    }
     if(u.head) u.head.rotation.y = Math.sin(t*0.6)*0.09;
     if(u.defending){
       u.armLPivot.rotation.x = -1.15; u.armRPivot.rotation.x = -1.15;
       u.legLPivot.rotation.x = 0; u.legRPivot.rotation.x = 0;
     } else {
-      u.armLPivot.rotation.x = Math.sin(t*speed)*0.09*amp;
-      u.armRPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.09*amp;
-      u.legLPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.16*amp;
-      u.legRPivot.rotation.x = Math.sin(t*speed)*0.16*amp;
+      u.armLPivot.rotation.x = Math.sin(t*speed)*0.16*amp;
+      u.armRPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.16*amp;
+      u.legLPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.26*amp;
+      u.legRPivot.rotation.x = Math.sin(t*speed)*0.26*amp;
     }
-    if(u.cape) u.cape.rotation.x = 0.18 + Math.sin(t*1.1)*0.06 + (moving?0.1:0);
+    if(u.cape) u.cape.rotation.x = 0.18 + Math.sin(t*1.1)*0.06 + (moving?0.14:0);
+    if(u.banner){
+      u.banner.rotation.z = Math.sin(t*3.4)*0.12*(moving?1:0.4);
+      u.banner.rotation.x = -0.12 + Math.sin(t*2.6)*0.05;
+    }
     if(u.aura) u.aura.rotation.z = t*0.5;
     if(u.aura2) u.aura2.rotation.z = -t*0.32;
     if(u.chestCrest) u.chestCrest.rotation.y = t*0.8;
@@ -6163,6 +6334,251 @@ var Battle3D = {
       }
       posAttr.needsUpdate = true;
     }
+    this.renderer.render(this.scene, this.camera);
+    this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
+  }
+};
+
+/* ============================================================
+   LEAGUE 3D — additive top-down Three.js layer for the 5×5
+   league arena. Same philosophy as Map3D/Battle3D above: this
+   NEVER touches league state, combat, movement or capture logic
+   — leagueLoop()/leagueDraw() keep running exactly as before and
+   remain the single source of truth. This module only reads that
+   state each frame and renders 10 low-poly stylized humanoids
+   (via Engine3D.buildHumanoid, the same builder used in the 1v1
+   battle screen) plus a small 3D arena/zone set underneath the
+   existing 2D canvas, which switches into a transparent "HUD-only"
+   mode (zones/rings/fx/nameplates/HP bars/minimap) so both layers
+   combine into one picture — see the `use3D` checks inside
+   leagueDraw()/leagueDrawUnitBody() above.
+
+   Camera: a purely orthographic, straight top-down camera (not
+   perspective, not tilted) sized every frame to exactly match the
+   2D canvas's own camX/camY/leagueTile/leagueViewW/H numbers. That
+   keeps every ground-level HUD element the 2D layer still draws
+   (zone circles, capture rings, the minimap viewport box) in
+   pixel-perfect alignment with the 3D world under it, while each
+   character's real height still reads naturally on screen — a
+   model "stands up" above its own feet position exactly like a
+   real object would under a true top-down parallel projection.
+   ============================================================ */
+var League3D = {
+  scene:null, camera:null, renderer:null, sun:null,
+  models:{}, zoneMeshes:{}, raf:null, ready:false,
+  HUMANOID_SCALE: 4.2,
+  teamColor: function(team){ return team==='blue' ? 0x3fe0d0 : 0xd43c56; },
+
+  init: function(){
+    if(this.scene) return; // build the scene/lights/ground/zones exactly once per app session
+    var T = window.THREE;
+    var canvas = $('league-canvas-3d');
+    var renderer = new T.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFSoftShadowMap;
+    if(T.ACESFilmicToneMapping){ renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08; }
+
+    var scene = new T.Scene();
+    scene.fog = new T.Fog(0x0d0a18, 90, 190);
+
+    var camera = new T.OrthographicCamera(-1,1,1,-1,0.1,320);
+    camera.up.set(0,0,-1); // straight top-down "map" convention: +X screen-right, +Z screen-down
+
+    // ---- lighting: hemisphere ambient (sky/ground tint) + an angled warm key sun with
+    // soft shadows + a cool violet rim + a gentle white fill, so armor/capes/helmets pick
+    // up clear highlights and shadow shape even from directly overhead ----
+    var hemi = new T.HemisphereLight(0xc3aeff, 0x150f24, 0.62);
+    scene.add(hemi);
+    var sun = new T.DirectionalLight(0xffe3ac, 1.35);
+    sun.position.set(60,140,-40);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024,1024);
+    sun.shadow.camera.left = -75; sun.shadow.camera.right = 75;
+    sun.shadow.camera.top = 75; sun.shadow.camera.bottom = -75;
+    sun.shadow.camera.near = 20; sun.shadow.camera.far = 260;
+    sun.shadow.bias = -0.0015;
+    scene.add(sun); scene.add(sun.target);
+    var rim = new T.DirectionalLight(0x8a6fd6, 0.55); rim.position.set(-50,60,50); scene.add(rim);
+    var fill = new T.DirectionalLight(0xffffff, 0.22); fill.position.set(30,40,80); scene.add(fill);
+
+    this.scene = scene; this.camera = camera; this.renderer = renderer; this.sun = sun;
+    this.buildGround();
+    this.buildZones();
+  },
+
+  buildGround: function(){
+    var T = window.THREE;
+    var w = LEAGUE_ARENA.w, h = LEAGUE_ARENA.h;
+    var ground = new T.Mesh(
+      new T.PlaneGeometry(w+30, h+30, 1, 1),
+      new T.MeshStandardMaterial({color:0x161022, roughness:0.95, metalness:0.05})
+    );
+    ground.rotation.x = -Math.PI/2; ground.position.set(w/2, 0, h/2); ground.receiveShadow = true;
+    this.scene.add(ground);
+
+    var grid = new T.GridHelper(Math.max(w,h)*1.3, Math.round(Math.max(w,h)/6), 0x4a3d6e, 0x241d38);
+    grid.position.set(w/2, 0.02, h/2);
+    grid.material.transparent = true; grid.material.opacity = 0.4;
+    this.scene.add(grid);
+
+    // low knee-high boundary wall so the arena's edges read clearly from above,
+    // even panned into a corner where the flat 2D border alone can feel flat
+    var edgeMat = new T.MeshStandardMaterial({color:0x35284f, roughness:0.55, emissive:0x1a1030, emissiveIntensity:0.4});
+    var edgeGeo = new T.BoxGeometry(1,0.7,1);
+    function mkEdge(scene, x,z,sx,sz){
+      var m = new T.Mesh(edgeGeo, edgeMat);
+      m.scale.set(sx,1,sz); m.position.set(x,0.35,z);
+      m.castShadow = true; m.receiveShadow = true;
+      scene.add(m);
+    }
+    mkEdge(this.scene, w/2, -0.5, w+1, 1);
+    mkEdge(this.scene, w/2, h+0.5, w+1, 1);
+    mkEdge(this.scene, -0.5, h/2, 1, h+1);
+    mkEdge(this.scene, w+0.5, h/2, 1, h+1);
+  },
+
+  buildZones: function(){
+    var T = window.THREE;
+    this.zoneMeshes = {};
+    var self = this;
+    LEAGUE_ZONES_DEF.forEach(function(z){
+      var g = new T.Group();
+      var base = new T.Mesh(
+        new T.CylinderGeometry(LEAGUE_CAPTURE_RADIUS, LEAGUE_CAPTURE_RADIUS*1.05, 0.5, 24),
+        new T.MeshStandardMaterial({color:0x2a2440, roughness:0.85, emissive:0x000000, emissiveIntensity:0})
+      );
+      base.position.y = 0.25; base.receiveShadow = true; base.castShadow = true;
+      g.add(base);
+      var ring = new T.Mesh(
+        new T.RingGeometry(LEAGUE_CAPTURE_RADIUS*0.94, LEAGUE_CAPTURE_RADIUS*1.0, 40),
+        new T.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.45, side:T.DoubleSide})
+      );
+      ring.rotation.x = -Math.PI/2; ring.position.y = 0.52;
+      g.add(ring);
+      g.position.set(z.x, 0, z.y);
+      g.userData = {base:base, ring:ring};
+      self.scene.add(g);
+      self.zoneMeshes[z.id] = g;
+    });
+  },
+
+  ensureModel: function(u){
+    var key = u.team+u.idx;
+    if(this.models[key]) return this.models[key];
+    var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
+    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+    var pal2 = {primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:this.teamColor(u.team)};
+    var model = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[u.cls], banner:this.teamColor(u.team)});
+    model.scale.setScalar(this.HUMANOID_SCALE);
+    model.userData._baseScale = this.HUMANOID_SCALE;
+    model.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+    this.scene.add(model);
+    this.models[key] = model;
+    return model;
+  },
+
+  syncUnits: function(){
+    if(!league) return;
+    var self = this;
+    var seen = {};
+    var t = performance.now()/1000;
+    league.units.forEach(function(u){
+      var key = u.team+u.idx;
+      seen[key] = true;
+      var m = self.ensureModel(u);
+      m.position.set(u.x, 0, u.y);
+      m.rotation.y = u.facing<0 ? Math.PI/2 : -Math.PI/2;
+      var visible = !u.ko;
+      m.visible = visible;
+      if(visible){
+        Engine3D.animateHumanoidIdle(m, t + (u.team==='red'?37:0), u.moving);
+        m.scale.setScalar(self.HUMANOID_SCALE); // animateHumanoidIdle only touches child parts, but stay defensive
+      }
+      if(u.flash>0 && !m.userData._flashedRecently){
+        m.userData._flashedRecently = true;
+        Engine3D.triggerFlash(m, 0xffffff);
+        setTimeout(function(){ m.userData._flashedRecently = false; }, 180);
+      }
+    });
+    Object.keys(this.models).forEach(function(key){
+      if(!seen[key]){ self.scene.remove(self.models[key]); delete self.models[key]; }
+    });
+  },
+
+  syncZones: function(){
+    if(!league) return;
+    league.zones.forEach(function(z){
+      var g = League3D.zoneMeshes[z.id];
+      if(!g) return;
+      var hex = z.owner==='blue' ? 0x3fe0d0 : (z.owner==='red' ? 0xd43c56 : 0x453a66);
+      g.userData.base.material.color.setHex(hex);
+      g.userData.base.material.emissive.setHex(hex);
+      g.userData.base.material.emissiveIntensity = z.owner ? 0.4 : 0.08;
+      g.userData.ring.material.color.setHex(z.owner==='blue' ? 0x3fe0d0 : (z.owner==='red' ? 0xd43c56 : 0xffffff));
+    });
+  },
+
+  resize: function(){
+    if(!this.renderer || !leagueCanvas) return;
+    var w = leagueCanvas.clientWidth, h = leagueCanvas.clientHeight;
+    if(w<=0 || h<=0) return;
+    this.renderer.setSize(w, h, false);
+  },
+
+  updateCamera: function(){
+    if(!league) return;
+    var halfW = (leagueViewW||40)/2, halfH = (leagueViewH||40)/2;
+    var cam = this.camera;
+    cam.left = -halfW; cam.right = halfW; cam.top = halfH; cam.bottom = -halfH;
+    cam.updateProjectionMatrix();
+    var camX = league.camX==null ? LEAGUE_ARENA.w/2 : league.camX;
+    var camY = league.camY==null ? LEAGUE_ARENA.h/2 : league.camY;
+    cam.position.set(camX, 140, camY);
+    cam.lookAt(camX, 0, camY);
+    if(this.sun){
+      this.sun.target.position.set(camX, 0, camY);
+      this.sun.position.set(camX+60, 140, camY-40);
+      this.sun.target.updateMatrixWorld();
+    }
+  },
+
+  start: function(){
+    var self = this;
+    this.ready = false;
+    Engine3D.ensureThree().then(function(){
+      self.init();
+      // clear any roster left over from a previous match (rematch/new match with a
+      // different class lineup) before rebuilding fresh models for this one
+      if(self.scene){
+        Object.keys(self.models).forEach(function(k){ self.scene.remove(self.models[k]); });
+      }
+      self.models = {};
+      self.resize();
+      self.ready = true;
+      var c = $('league-canvas-3d'); if(c) c.classList.add('ready');
+      if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
+    }).catch(function(){ /* offline or unsupported — the flat 2D arena stays fully playable */ });
+  },
+
+  stop: function(){
+    this.ready = false;
+    var c = $('league-canvas-3d'); if(c) c.classList.remove('ready');
+    if(this.raf){ cancelAnimationFrame(this.raf); this.raf = null; }
+    if(this.scene){
+      var self = this;
+      Object.keys(this.models).forEach(function(k){ self.scene.remove(self.models[k]); });
+      this.models = {};
+    }
+  },
+
+  tick: function(ts){
+    var self = this;
+    if(state.screen!=='league' || !league || league.ended || !this.renderer){ this.raf = null; return; }
+    this.resize();
+    this.syncUnits();
+    this.syncZones();
+    this.updateCamera();
     this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
   }
