@@ -82,20 +82,25 @@ input{font-family:inherit;}
 }
 @media (orientation:landscape){
   #app{ max-width:none; }
-  .screen:not(#screen-game):not(#screen-battle){
+  .screen:not(#screen-game):not(#screen-battle):not(#screen-league){
     left:0; right:0; width:560px; max-width:92vw; margin:0 auto; transform:none;
   }
-  #screen-battle > *{
-    width:100%; max-width:560px; margin-left:auto; margin-right:auto;
-  }
-  #screen-battle{ padding-top:6px; }
-  .enemy-stage{ padding-top:0; padding-bottom:0; }
+  /* battle screens go fully edge-to-edge/widescreen in landscape — no centered column */
+  #screen-battle, #screen-league{ width:100%; max-width:none; left:0; right:0; }
 }
 .screen{
   position:absolute;inset:0;
   display:flex;flex-direction:column;
   overflow-y:auto; -webkit-overflow-scrolling:touch;
   animation:fadeIn .35s ease;
+}
+#screen-battle{
+  overflow:hidden !important;
+  -webkit-overflow-scrolling:auto;
+}
+#screen-league{
+  overflow:hidden !important;
+  -webkit-overflow-scrolling:auto;
 }
 @keyframes fadeIn{from{opacity:0; transform:scale(0.98);} to{opacity:1; transform:scale(1);}}
 
@@ -437,6 +442,8 @@ input{font-family:inherit;}
     radial-gradient(ellipse at 50% 20%, rgba(138,111,214,0.22), transparent 55%),
     linear-gradient(180deg, #140a24, #0a0614 70%);
   position:relative;
+  overflow:hidden !important;
+  display:block;
 }
 #screen-battle.shake{animation:screenshake .35s ease;}
 @keyframes screenshake{
@@ -444,28 +451,35 @@ input{font-family:inherit;}
   50%{transform:translateX(-4px);} 70%{transform:translateX(3px);} 90%{transform:translateX(-1px);}
   100%{transform:translateX(0);}
 }
-.battle-top{padding:10px 14px 6px;flex-shrink:0;}
-.zone-tag{font-size:11px;color:var(--text-faint);text-align:center;margin-bottom:8px;letter-spacing:1px;}
+
+/* ---- full-bleed HUD: the arena fills the whole screen, everything else
+   floats on top as absolute overlays. No document flow, no scroll, ever. ---- */
+.battle-top{
+  position:absolute; top:0; left:0; right:0; z-index:20;
+  padding:calc(8px + env(safe-area-inset-top,0px)) 12px 6px;
+  background:linear-gradient(180deg, rgba(10,6,20,0.75), transparent);
+  pointer-events:none;
+}
+.zone-tag{font-size:10.5px;color:var(--text-faint);text-align:center;margin-bottom:6px;letter-spacing:1px;}
 
 /* ---- top HP bars: player left, enemy right ---- */
 .battle-bars-row{display:flex;align-items:center;gap:8px;}
-.bb-side{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
+.bb-side{flex:1;display:flex;align-items:center;gap:6px;min-width:0;}
 .bb-enemy{flex-direction:row-reverse;}
-.bb-vs{font-size:14px;color:var(--gold-dim);flex-shrink:0;}
-.bb-icon{width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;
+.bb-vs{font-size:13px;color:var(--gold-dim);flex-shrink:0;}
+.bb-icon{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;
   background:radial-gradient(circle at 35% 30%, var(--bg-panel-light), var(--bg-dark));border:1px solid var(--gold-dim);overflow:hidden;}
 #ebb-icon{border-color:var(--crimson-dark);}
 .bb-info{flex:1;min-width:0;}
-.bb-name-row{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-dim);gap:4px;}
+.bb-name-row{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);gap:4px;}
 .bb-name-row-rev{flex-direction:row-reverse;}
 .bb-name-row b{color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-/* ---- action arena: hero can roam left, enemy fixed right ---- */
+/* ---- action arena: fills 100% of the screen behind the HUD ---- */
 .arena-wrap{
-  flex:1;position:relative;min-height:0;margin:6px 10px;border-radius:16px;
+  position:absolute; inset:0;
   overflow:hidden;
   background:radial-gradient(ellipse at 50% 30%, rgba(138,111,214,0.16), transparent 60%);
-  border:1px solid rgba(224,184,76,0.14);
   touch-action:none;
 }
 #battle3d-canvas{
@@ -585,37 +599,42 @@ input{font-family:inherit;}
 }
 
 .battle-log{
-  margin:0 14px;padding:7px 12px;border-radius:10px;
-  background:rgba(0,0,0,0.35);border:1px solid var(--line);
-  font-size:11.5px;color:var(--text-dim);min-height:30px;
-  display:flex;flex-direction:column;justify-content:center;gap:2px;
-  flex-shrink:0;
+  position:absolute; left:10px; right:10px; z-index:19;
+  bottom:calc(172px + env(safe-area-inset-bottom,0px));
+  margin:0; padding:6px 12px;border-radius:10px;
+  background:rgba(0,0,0,0.45);border:1px solid var(--line);
+  font-size:11px;color:var(--text-dim);
+  text-align:center;pointer-events:none;
 }
 .battle-log .cur{color:var(--gold-bright);font-weight:700;}
 
-/* ---- bottom controls: joystick LEFT, action buttons RIGHT ---- */
-#battle-actions{padding:8px 14px calc(10px + env(safe-area-inset-bottom,0px));flex-shrink:0;}
+/* ---- bottom controls: joystick LEFT, action buttons RIGHT, floating overlay ---- */
+#battle-actions{
+  position:absolute; left:0; right:0; bottom:0; z-index:20;
+  padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(0deg, rgba(10,6,20,0.8), transparent);
+}
 .battle-controls-row{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  display:flex; align-items:flex-end; justify-content:space-between; gap:8px;
   direction:ltr; /* joystick stays visually left, buttons visually right regardless of page rtl */
 }
-.joy-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;}
+.joy-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
 .joystick-base{
-  width:104px;height:104px;border-radius:50%;position:relative;
+  width:92px;height:92px;border-radius:50%;position:relative;
   background:radial-gradient(circle at 40% 32%, rgba(43,31,69,0.6), rgba(8,5,15,0.4));
   border:1px solid rgba(224,184,76,0.22);
   box-shadow:0 8px 22px rgba(0,0,0,0.4), inset 0 0 14px rgba(0,0,0,0.35);
   touch-action:none;
 }
 .joystick-stick{
-  position:absolute;width:46px;height:46px;border-radius:50%;
+  position:absolute;width:40px;height:40px;border-radius:50%;
   left:50%;top:50%;transform:translate(-50%,-50%);
   background:linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
   box-shadow:0 5px 0 var(--gold-dim), 0 8px 16px rgba(0,0,0,0.4);
   touch-action:none;
 }
-.joy-hint{font-size:9px;color:var(--text-faint);}
-.battle-btns-col{display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;max-width:280px;}
+.joy-hint{font-size:8.5px;color:var(--text-faint);}
+.battle-btns-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
 .act-btn{
   padding:10px 6px;border-radius:12px;font-size:12px;font-weight:700;
   background:linear-gradient(180deg, var(--bg-panel-light), var(--bg-panel));
@@ -629,11 +648,11 @@ input{font-family:inherit;}
 .act-btn.out-of-range{opacity:0.55;}
 
 /* ---- One Piece style round action cluster ---- */
-.skill-circle-row{display:flex;align-items:flex-end;justify-content:center;gap:9px;flex-wrap:wrap;max-width:230px;min-height:46px;}
+.skill-circle-row{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:nowrap;min-height:40px;}
 .skill-circle{
-  position:relative;width:46px;height:46px;border-radius:50%;padding:0;flex-shrink:0;
+  position:relative;width:40px;height:40px;border-radius:50%;padding:0;flex-shrink:0;
   background:radial-gradient(circle at 34% 28%, #b9a2ef, var(--violet) 65%, #4a3d80);
-  border:2px solid #5b4a99;box-shadow:0 4px 0 #3f3470, 0 3px 8px rgba(0,0,0,0.4);
+  border:2px solid #5b4a99;box-shadow:0 3px 0 #3f3470, 0 3px 8px rgba(0,0,0,0.4);
   display:flex;align-items:center;justify-content:center;
 }
 .skill-circle:active{transform:translateY(3px);box-shadow:0 1px 0 #3f3470;}
@@ -641,47 +660,47 @@ input{font-family:inherit;}
 .skill-circle.ultimate{
   border-color:var(--gold-dim);
   background:radial-gradient(circle at 34% 28%, #ffe9ad, var(--gold-dim) 65%, #8a6a12);
-  box-shadow:0 4px 0 #8a6a12, 0 0 12px rgba(224,184,76,0.55);
+  box-shadow:0 3px 0 #8a6a12, 0 0 12px rgba(224,184,76,0.55);
 }
-.skill-circle-ic{width:25px;height:25px;pointer-events:none;}
+.skill-circle-ic{width:21px;height:21px;pointer-events:none;}
 .skill-circle-ic svg{width:100%;height:100%;display:block;}
 .skill-circle-cost{
-  position:absolute;bottom:-5px;right:-4px;background:var(--bg-dark);
-  border:1px solid var(--teal-dark);color:var(--teal);font-size:8.5px;font-weight:800;
-  padding:1px 4px;border-radius:7px;line-height:1.25;pointer-events:none;
+  position:absolute;bottom:-6px;right:-4px;background:var(--bg-dark);
+  border:1px solid var(--teal-dark);color:var(--teal);font-size:7.5px;font-weight:800;
+  padding:1px 3px;border-radius:6px;line-height:1.2;pointer-events:none;
 }
 .skill-circle.cost-lack .skill-circle-cost{color:var(--crimson-bright);border-color:var(--crimson-dark);}
 
-.core-action-row{display:flex;align-items:center;justify-content:center;gap:11px;}
-.core-action-row.sub-row{gap:16px;}
+.core-action-row{display:flex;align-items:center;justify-content:center;gap:9px;}
+.core-action-row.sub-row{gap:13px;margin-top:2px;}
 .act-btn.circle{
-  border-radius:50%;padding:0;width:50px;height:50px;font-size:19px;box-shadow:0 4px 0 #120b21;
+  border-radius:50%;padding:0;width:44px;height:44px;font-size:17px;box-shadow:0 4px 0 #120b21;
 }
 .act-btn.circle .act-ic{font-size:inherit;}
 .act-btn.circle.attack{
-  width:66px;height:66px;font-size:27px;
+  width:58px;height:58px;font-size:24px;
   background:radial-gradient(circle at 34% 28%, #ff8ea1, var(--crimson-bright) 60%, var(--crimson-dark));
   border:3px solid var(--crimson-dark);box-shadow:0 5px 0 var(--crimson-dark), 0 3px 10px rgba(212,60,86,0.45);color:#2a0710;
 }
 .act-btn.circle.heavy{
-  width:46px;height:46px;font-size:17px;
+  width:40px;height:40px;font-size:15px;
   background:radial-gradient(circle at 34% 28%, #ffcc9a, #ff9a4c 60%, #b8551f);
-  border:2px solid #8a4318;box-shadow:0 4px 0 #8a4318;color:#2a1204;
+  border:2px solid #8a4318;box-shadow:0 3px 0 #8a4318;color:#2a1204;
 }
 .act-btn.circle.defend{
-  width:46px;height:46px;font-size:17px;
+  width:40px;height:40px;font-size:15px;
   background:radial-gradient(circle at 34% 28%, #ccd3ec, #9aa3c4 60%, #495079);
-  border:2px solid #3a3f61;box-shadow:0 4px 0 #3a3f61;color:#171a2c;
+  border:2px solid #3a3f61;box-shadow:0 3px 0 #3a3f61;color:#171a2c;
 }
 .act-btn.circle.item{
-  width:42px;height:42px;font-size:15px;
+  width:36px;height:36px;font-size:13px;
   background:radial-gradient(circle at 34% 28%, #b2f0e6, #6fe0d0 60%, var(--teal-dark));
-  border:2px solid var(--teal-dark);box-shadow:0 4px 0 var(--teal-dark);color:#062421;
+  border:2px solid var(--teal-dark);box-shadow:0 3px 0 var(--teal-dark);color:#062421;
 }
 .act-btn.circle.run{
-  width:42px;height:42px;font-size:15px;
+  width:36px;height:36px;font-size:13px;
   background:radial-gradient(circle at 34% 28%, var(--bg-panel-light), var(--bg-panel));
-  border:2px solid var(--line);box-shadow:0 4px 0 #120b21;
+  border:2px solid var(--line);box-shadow:0 3px 0 #120b21;
 }
 .act-btn.circle:active{transform:translateY(3px);box-shadow:none;}
 
@@ -997,44 +1016,50 @@ input{font-family:inherit;}
 .item-row.rarity-border-mythic{border-color:var(--crimson-dark);}
 .account-note{font-size:11px;color:var(--text-faint);margin:-2px 0 2px;line-height:1.5;}
 .modal-tabs.tabs-3 .modal-tab{font-size:11px;padding:8px 4px;}/* ============================= LEAGUE BATTLE MODE (5×5) ============================= */
-#screen-league{ background:var(--bg-void); }
+#screen-league{
+  background:var(--bg-void);
+  overflow:hidden !important;
+  position:relative;
+  display:block;
+}
 .league-header{
+  position:absolute; top:0; left:0; right:0; z-index:20;
   display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:8px 12px;background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
-  border-bottom:1px solid var(--line); flex-shrink:0; z-index:6;
+  padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px;
+  background:linear-gradient(180deg, rgba(10,6,20,0.8), transparent);
 }
 .league-timer{
-  font-size:18px;font-weight:800;color:var(--gold-bright);
-  background:var(--bg-dark);padding:4px 12px;border-radius:9px;border:1px solid var(--gold-dim);
-  min-width:64px;text-align:center;
+  font-size:16px;font-weight:800;color:var(--gold-bright);
+  background:var(--bg-dark);padding:3px 11px;border-radius:9px;border:1px solid var(--gold-dim);
+  min-width:58px;text-align:center;
 }
 .league-score{ display:flex; align-items:center; gap:6px; }
-.zone-pip{ width:13px;height:13px;border-radius:4px;background:#2c2340;border:1px solid var(--line); }
+.zone-pip{ width:12px;height:12px;border-radius:4px;background:#2c2340;border:1px solid var(--line); }
 .zone-pip.blue{ background:linear-gradient(180deg, var(--teal), var(--teal-dark)); border-color:var(--teal-dark); }
 .zone-pip.red{ background:linear-gradient(180deg, var(--crimson-bright), var(--crimson-dark)); border-color:var(--crimson-dark); }
 .btn-retreat{
-  padding:6px 12px;border-radius:9px;font-size:11.5px;font-weight:700;
+  padding:5px 11px;border-radius:9px;font-size:11px;font-weight:700;
   background:var(--bg-dark);border:1px solid var(--crimson-dark);color:var(--crimson-bright);
 }
-#league-wrap{ flex:1; min-height:120px; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-#league-canvas{ display:block; border-radius:6px; }
+#league-wrap{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#league-canvas{ display:block; width:100%; height:100%; }
 .league-sweep-banner{
   position:absolute; top:14px; left:50%; transform:translateX(-50%);
   z-index:12; text-align:center; pointer-events:none;
 }
 .league-sweep-banner .num{
-  font-size:46px;font-weight:900;text-shadow:0 4px 16px rgba(0,0,0,0.7);
+  font-size:40px;font-weight:900;text-shadow:0 4px 16px rgba(0,0,0,0.7);
   animation:sweepPulse 1s ease-in-out infinite;
 }
-.league-sweep-banner .lbl{ font-size:12px;font-weight:700;color:var(--text-light);margin-top:2px; }
+.league-sweep-banner .lbl{ font-size:11px;font-weight:700;color:var(--text-light);margin-top:2px; }
 .league-sweep-banner.blue .num{ color:var(--teal); }
 .league-sweep-banner.red .num{ color:var(--crimson-bright); }
 @keyframes sweepPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
 #league-controls{
+  position:absolute; left:0; right:0; bottom:0; z-index:20;
   display:flex;align-items:center;justify-content:center;
   padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
-  background:linear-gradient(0deg, var(--bg-panel-2), transparent);
-  flex-shrink:0; z-index:6;
+  background:linear-gradient(0deg, rgba(10,6,20,0.82), transparent);
 }
 
 /* creature portrait wrapper (used for monster SVGs in battle + league rosters) */
@@ -1042,14 +1067,16 @@ input{font-family:inherit;}
 .creature-portrait svg{ width:100%; height:100%; }
 .enemy-sprite{ width:150px; height:150px; }
 .enemy-sprite.boss{ width:190px; height:190px; }
-.mini-hero{ width:30px;height:30px;border-radius:8px;overflow:hidden;flex-shrink:0;background:radial-gradient(circle at 35% 30%, var(--bg-panel-light), var(--bg-dark));border:1px solid var(--line); position:relative; transition:opacity .25s; }
+.mini-hero{ width:26px;height:26px;border-radius:7px;overflow:hidden;flex-shrink:0;background:radial-gradient(circle at 35% 30%, var(--bg-panel-light), var(--bg-dark));border:1px solid var(--line); position:relative; transition:opacity .25s; }
 .mini-hero.blue{ box-shadow:0 0 0 1.5px var(--teal); }
 .mini-hero.red{ box-shadow:0 0 0 1.5px var(--crimson-bright); }
 .mini-hero.ko{ opacity:.3; filter:grayscale(1); }
 .mini-hero .mh-hp{ position:absolute; left:1px; right:1px; bottom:1px; height:3px; border-radius:2px; background:rgba(0,0,0,0.5); overflow:hidden; }
 .mini-hero .mh-hp i{ display:block; height:100%; background:linear-gradient(90deg,#5be89a,#2fbf6e); transition:width .2s; }
 .mini-hero.red .mh-hp i{ background:linear-gradient(90deg,#ff8a7a,#d43c56); }
-.roster-row{ display:flex; gap:5px; padding:6px 10px; justify-content:center; }
+.roster-row{ position:absolute; left:0; right:0; z-index:19; display:flex; gap:4px; padding:4px 10px; justify-content:center; pointer-events:none; }
+.roster-row-top{ top:calc(40px + env(safe-area-inset-top,0px)); }
+.roster-row-bottom{ bottom:calc(96px + env(safe-area-inset-bottom,0px)); }
 
 /* ---- league combat juice: kill feed + special button ---- */
 #league-killfeed{
@@ -1057,28 +1084,40 @@ input{font-family:inherit;}
   display:flex; flex-direction:column; gap:4px; align-items:flex-end; max-width:78%;
 }
 #league-killfeed .kf-item{
-  font-size:10.5px; font-weight:700; color:var(--text-light); background:rgba(10,6,20,0.72);
+  font-size:10px; font-weight:700; color:var(--text-light); background:rgba(10,6,20,0.72);
   border:1px solid var(--line); border-radius:7px; padding:3px 9px; white-space:nowrap;
-  animation:kfIn .25s ease-out, kfOut .4s ease-in 2.6s forwards;
+  animation:kfIn .25s ease-out, kfOut .4s ease-in 2.1s forwards;
 }
 @keyframes kfIn{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
 @keyframes kfOut{to{opacity:0;transform:translateX(12px);}}
-.lg-controls-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:18px; width:100%; direction:ltr; }
+.lg-controls-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; width:100%; direction:ltr; }
 .lg-ctrl-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.lg-abilities-col{ display:flex; align-items:flex-end; gap:10px; }
 #lg-special{
-  width:64px;height:64px;border-radius:50%;flex-shrink:0;position:relative;
+  width:60px;height:60px;border-radius:50%;flex-shrink:0;position:relative;
   background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-dim) 70%);
   border:2px solid var(--gold-bright); box-shadow:0 4px 14px rgba(0,0,0,0.5);
-  font-size:24px; display:flex; align-items:center; justify-content:center; color:#2a1a05;
+  font-size:22px; display:flex; align-items:center; justify-content:center; color:#2a1a05;
   transition:transform .12s;
 }
 #lg-special:active{ transform:scale(0.92); }
 #lg-special.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
-#lg-special .cd-num{ position:absolute; font-size:20px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-special .cd-num{ position:absolute; font-size:18px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-ability{
+  width:46px;height:46px;border-radius:50%;flex-shrink:0;position:relative;
+  background:radial-gradient(circle at 35% 30%, #b9a2ef, var(--violet) 70%);
+  border:2px solid #5b4a99; box-shadow:0 3px 10px rgba(0,0,0,0.5);
+  font-size:18px; display:flex; align-items:center; justify-content:center; color:#1c1233;
+  transition:transform .12s;
+}
+#lg-ability:active{ transform:scale(0.92); }
+#lg-ability.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
+#lg-ability .cd-num{ position:absolute; font-size:15px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
 
 /* ---- first-run explainer banner: who you are + how the mode works ---- */
 .league-tip{
-  margin:0 10px 4px; padding:8px 10px; border-radius:12px; z-index:7;
+  position:absolute; top:calc(64px + env(safe-area-inset-top,0px)); left:10px; right:10px; z-index:21;
+  padding:8px 10px; border-radius:12px;
   background:linear-gradient(160deg, rgba(43,31,69,0.92), rgba(13,8,24,0.92));
   border:1px solid var(--gold-dim);
   display:flex; align-items:center; gap:8px;
@@ -1432,21 +1471,6 @@ input{font-family:inherit;}
 
   <!-- ============================= LEAGUE BATTLE (5×5 FLAG CAPTURE) ============================= -->
   <div id="screen-league" class="screen hidden">
-    <div class="league-header">
-      <button class="btn-retreat" id="btn-league-retreat">🚪 انسحاب</button>
-      <div class="league-timer" id="league-timer">3:00</div>
-      <div class="league-score">
-        <span class="zone-pip" id="lg-pip-r0"></span><span class="zone-pip" id="lg-pip-r1"></span><span class="zone-pip" id="lg-pip-r2"></span><span class="zone-pip" id="lg-pip-r3"></span><span class="zone-pip" id="lg-pip-r4"></span>
-      </div>
-    </div>
-    <div class="league-tip hidden" id="league-tip">
-      <div class="league-tip-body">
-        <b>أنت اللاعب صاحب الحلقة الذهبية 🟡 المضيئة والاسم "أنت"</b>
-        <span>🕹️ حرّك بالعصا يمين/شمال/فوق/تحت — هجومك تلقائي بمجرد ما تقرب من أي عدو (مفيش زرار هجوم عادي) — ⚔️ زرار القدرة الخاصة لضربة إضافية قوية — ادخل الرموز الملوّنة في الخريطة واقف جواها عشان تحتلها وتكسب الجولة.</span>
-      </div>
-      <button id="league-tip-close">فهمت ✕</button>
-    </div>
-    <div class="roster-row" id="league-roster-blue"></div>
     <div id="league-wrap">
       <canvas id="league-canvas"></canvas>
       <div class="league-sweep-banner hidden" id="league-sweep-banner">
@@ -1455,7 +1479,25 @@ input{font-family:inherit;}
       </div>
       <div id="league-killfeed"></div>
     </div>
-    <div class="roster-row" id="league-roster-red"></div>
+
+    <div class="league-header">
+      <button class="btn-retreat" id="btn-league-retreat">🚪 انسحاب</button>
+      <div class="league-timer" id="league-timer">3:00</div>
+      <div class="league-score">
+        <span class="zone-pip" id="lg-pip-r0"></span><span class="zone-pip" id="lg-pip-r1"></span><span class="zone-pip" id="lg-pip-r2"></span><span class="zone-pip" id="lg-pip-r3"></span><span class="zone-pip" id="lg-pip-r4"></span>
+      </div>
+    </div>
+    <div class="roster-row roster-row-top" id="league-roster-blue"></div>
+    <div class="roster-row roster-row-bottom" id="league-roster-red"></div>
+
+    <div class="league-tip hidden" id="league-tip">
+      <div class="league-tip-body">
+        <b>أنت اللاعب صاحب الحلقة الذهبية 🟡 المضيئة والاسم "أنت"</b>
+        <span>🕹️ حرّك بالعصا يمين/شمال/فوق/تحت — هجومك تلقائي بمجرد ما تقرب من أي عدو (مفيش زرار هجوم عادي) — استخدم القدرات الدائرية جنب العصا لضربات إضافية قوية — ادخل الرموز الملوّنة في الخريطة واقف جواها عشان تحتلها وتكسب الجولة.</span>
+      </div>
+      <button id="league-tip-close">فهمت ✕</button>
+    </div>
+
     <div id="league-controls">
       <div class="lg-controls-row">
         <div class="lg-ctrl-col">
@@ -1463,12 +1505,12 @@ input{font-family:inherit;}
             <div class="joystick-base" id="lg-joy-base">
               <div class="joystick-stick" id="lg-joy-stick"></div>
             </div>
-            <div class="joy-hint">تحرك — الهجوم تلقائي بالقرب من عدو</div>
+            <div class="joy-hint">تحرك — الهجوم تلقائي</div>
           </div>
         </div>
-        <div class="lg-ctrl-col">
-          <button id="lg-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
-          <div class="joy-hint">قدرة خاصة</div>
+        <div class="lg-abilities-col">
+          <button id="lg-ability" class="lg-round-ability" title="قدرة سريعة"><span id="lg-ability-icon">💫</span><span class="cd-num hidden" id="lg-ability-cd"></span></button>
+          <button id="lg-special" class="lg-round-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
         </div>
       </div>
     </div>
@@ -3763,6 +3805,10 @@ function onMpRoomMessage(evt){
     if(!league.isHost) return;
     var su = league.units.filter(function(x){ return x.peerId===data.from; })[0];
     if(su && !su.ko && su.specialCd<=0) leagueResolveSpecial(su);
+  } else if(data.type==='abilityRequest'){
+    if(!league.isHost) return;
+    var au = league.units.filter(function(x){ return x.peerId===data.from; })[0];
+    if(au && !au.ko && au.abilityCd<=0) leagueResolveAbility(au);
   } else if(data.type==='snapshot'){
     if(league.isHost) return; // host never applies snapshots — it IS the authority
     league.time = data.time;
@@ -3799,6 +3845,12 @@ function onMpRoomMessage(evt){
     var a3 = findLeagueUnit(data.aTeam, data.aIdx), t3 = findLeagueUnit(data.tTeam, data.tIdx);
     if(!a3 || !t3) return;
     league.fx.push({ type:data.kind, x:t3.x, y:t3.y, x0:a3.x, y0:a3.y, life:0.5, born:0 });
+  } else if(data.type==='abilityFx'){
+    if(league.isHost) return;
+    var a4 = findLeagueUnit(data.aTeam, data.aIdx), t4 = findLeagueUnit(data.tTeam, data.tIdx);
+    if(!a4 || !t4) return;
+    league.fx.push({ type:data.kind, x:t4.x, y:t4.y, x0:a4.x, y0:a4.y, life:0.35, born:0,
+      color: a4.cls==='mage' ? '#a86bff' : (a4.cls==='archer' ? '#ffd45e' : '#3fe0d0') });
   } else if(data.type==='peer-left'){
     toast('لاعب انسحب من المعركة، هيتحول مكانه لبوت 🤖');
     var lu = league.units.filter(function(x){ return x.peerId===data.id; })[0];
@@ -3895,6 +3947,7 @@ function leagueStatsFor(cls, lvl){
   };
 }
 var LEAGUE_RANGE = { warrior:9, mage:22, archer:20 };
+var LEAGUE_ABILITY_CD = { warrior:4, mage:5, archer:3.5 };
 var LEAGUE_ATK_CD = { warrior:0.85, mage:1.3, archer:0.7 };
 var LEAGUE_RESPAWN_SECONDS = 6;
 
@@ -3916,6 +3969,7 @@ function makeLeagueUnit(team, idx, cls, lvl){
     bob: Math.random()*Math.PI*2,
     flash: 0, moving:false,
     specialCd: 0, specialReady: false,
+    abilityCd: 0,
     /* controlled: 'me' = this device's player, 'net' = a real remote player
        (simulated locally only on the host, mirrored via snapshots on peers),
        'ai' = bot. peerId links a 'net' slot to its network connection id. */
@@ -3963,7 +4017,7 @@ function newLeagueState(){
 function launchLeagueScreen(){
   try{
     renderLeagueRoster();
-    updateLeagueSpecialBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
     showScreen('screen-league');
     var tip = $('league-tip');
     if(tip){
@@ -4084,7 +4138,7 @@ function leagueLoop(ts){
     leagueUpdateFx(dt);
     leagueUpdateCamera(dt);
     updateLeagueRosterHP();
-    updateLeagueSpecialBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
     leagueDraw();
     mpTickSendInput(dt);
   } else {
@@ -4095,7 +4149,7 @@ function leagueLoop(ts){
     leagueUpdateFx(dt);
     leagueUpdateCamera(dt);
     updateLeagueRosterHP();
-    updateLeagueSpecialBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
     leagueDraw();
     if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
   }
@@ -4214,12 +4268,13 @@ function leagueDealDamage(attacker, target, mult, label){
 
 function leaguePushKillfeed(text){
   var el = $('league-killfeed');
+  if(el.lastChild && el.lastChild.textContent === text) return; // avoid back-to-back duplicate spam
   var div = document.createElement('div');
   div.className = 'kf-item';
   div.textContent = text;
   el.appendChild(div);
   while(el.children.length>4) el.removeChild(el.firstChild);
-  setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); }, 3100);
+  setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); }, 2600);
 }
 
 function leagueUpdateCombat(dt){
@@ -4231,6 +4286,7 @@ function leagueUpdateCombat(dt){
     if(u.flash>0) u.flash -= dt;
     if(u.atkCd>0) u.atkCd -= dt;
     if(u.specialCd>0){ u.specialCd -= dt; if(u.specialCd<0) u.specialCd=0; }
+    if(u.abilityCd>0){ u.abilityCd -= dt; if(u.abilityCd<0) u.abilityCd=0; }
     var target = leagueNearestEnemy(u, LEAGUE_RANGE[u.cls]);
     if(target && u.atkCd<=0){
       u.atkCd = LEAGUE_ATK_CD[u.cls];
@@ -4305,6 +4361,53 @@ function updateLeagueSpecialBtn(){
     btn.classList.add('cooling');
     cdEl.classList.remove('hidden');
     cdEl.textContent = Math.ceil(p.specialCd);
+  } else {
+    btn.classList.remove('cooling');
+    cdEl.classList.add('hidden');
+  }
+}
+
+/* ---- secondary ability: lighter/faster cooldown move, uses each class's
+   signature non-ultimate skill flavor (lunge strike / firebolt / double shot) ---- */
+function useLeagueAbility(){
+  if(!league || league.ended) return;
+  var p = myLeagueUnit();
+  if(!p || p.ko || p.abilityCd>0) return;
+  if(league.online && !league.isHost){
+    p.abilityCd = LEAGUE_ABILITY_CD[p.cls];
+    mpSend({ type:'abilityRequest' });
+    return;
+  }
+  leagueResolveAbility(p);
+}
+
+function leagueResolveAbility(p){
+  var target = leagueNearestEnemy(p, LEAGUE_RANGE[p.cls]*1.3);
+  if(!target){ if(p.controlled==='me') toast('لا يوجد عدو قريب بما يكفي'); return; }
+  p.abilityCd = LEAGUE_ABILITY_CD[p.cls];
+  league.shake = Math.min(6, league.shake+2);
+  var kind = p.cls==='mage' ? 'bolt' : (p.cls==='archer' ? 'barrage' : 'slash');
+  league.fx.push({ type: kind, x:target.x, y:target.y, x0:p.x, y0:p.y, life:0.35, born:0,
+    color: p.cls==='mage' ? '#a86bff' : (p.cls==='archer' ? '#ffd45e' : '#3fe0d0') });
+  if(league.online && league.isHost) mpBroadcast({ type:'abilityFx', kind:kind, aTeam:p.team, aIdx:p.idx, tTeam:target.team, tIdx:target.idx });
+  leagueDealDamage(p, target, p.cls==='archer' ? 0.9 : 1.4);
+  if(p.cls==='archer'){
+    var extra = leagueNearestEnemy(p, LEAGUE_RANGE[p.cls]*1.3);
+    if(extra) leagueDealDamage(p, extra, 0.7);
+  }
+}
+
+function updateLeagueAbilityBtn(){
+  if(!league) return;
+  var btn = $('lg-ability'), cdEl = $('lg-ability-cd'), icon = $('lg-ability-icon');
+  if(!btn) return;
+  var p = myLeagueUnit();
+  if(!p) return;
+  if(icon) icon.textContent = p.cls==='mage' ? '🔥' : (p.cls==='archer' ? '🏹' : '💥');
+  if(p.abilityCd>0){
+    btn.classList.add('cooling');
+    cdEl.classList.remove('hidden');
+    cdEl.textContent = Math.ceil(p.abilityCd);
   } else {
     btn.classList.remove('cooling');
     cdEl.classList.add('hidden');
@@ -4867,6 +4970,7 @@ function wireEvents(){
   $('btn-league-online').addEventListener('click', startOnlineLeagueMatch);
   $('mp-wait-cancel').addEventListener('click', cancelOnlineWait);
   $('lg-special').addEventListener('click', useLeagueSpecial);
+  $('lg-ability').addEventListener('click', useLeagueAbility);
   $('btn-league-retreat').addEventListener('click', retreatFromLeague);
   $('league-tip-close').addEventListener('click', function(){
     $('league-tip').classList.add('hidden');
