@@ -138,6 +138,118 @@ input{font-family:inherit;}
   100%{transform:translateY(-420px) translateX(var(--drift,20px));opacity:0;}
 }
 
+/* ============================= LEAGUE HERO SHOWCASE ============================= */
+#screen-league-showcase{
+  position:relative; align-items:center; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 20%, #241a3a 0%, #0b0714 62%, #050308 100%);
+}
+.lgs-bg{ position:absolute; inset:0; z-index:0; }
+.lgs-rays{
+  position:absolute; inset:-20% -60%; z-index:0;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 30%,
+      rgba(224,184,76,0.09) 0deg 4deg, transparent 4deg 16deg);
+  animation:lgsRaysSpin 40s linear infinite;
+  mix-blend-mode:screen;
+}
+@keyframes lgsRaysSpin{ to{ transform:rotate(360deg); } }
+.lgs-vignette{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0,0,0,0.72) 100%);
+}
+.lgs-topbar{
+  position:relative; z-index:2; width:100%; display:flex; align-items:center;
+  padding:max(14px, env(safe-area-inset-top,0px)) 16px 8px;
+}
+.lgs-back{
+  width:36px;height:36px;border-radius:50%;background:rgba(10,6,18,0.6);
+  border:1px solid var(--line); color:var(--text-light); font-size:18px;
+}
+.lgs-title{
+  flex:1; text-align:center; font-size:16px; font-weight:900; letter-spacing:2px;
+  color:var(--gold-bright); text-shadow:0 0 14px rgba(224,184,76,0.6);
+}
+.lgs-spacer{ width:36px; }
+.lgs-banner{
+  position:relative; z-index:2; display:flex; align-items:center; gap:10px;
+  width:88%; max-width:420px; margin:6px auto 2px;
+}
+.lgs-banner-line{ flex:1; height:1px; background:linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+.lgs-banner-text{
+  font-size:12.5px; color:var(--text-dim); white-space:nowrap; letter-spacing:1px;
+}
+.lgs-power-row{
+  position:relative; z-index:2; display:flex; align-items:center; gap:8px;
+  background:linear-gradient(180deg, rgba(224,184,76,0.14), rgba(224,184,76,0.03));
+  border:1px solid var(--gold-dim); border-radius:999px; padding:6px 18px; margin:10px auto 4px;
+  box-shadow:0 0 18px rgba(224,184,76,0.18);
+}
+.lgs-power-icon{ font-size:14px; }
+.lgs-power-label{ font-size:11px; color:var(--text-dim); }
+.lgs-power-num{ font-size:16px; font-weight:900; color:var(--gold-bright); text-shadow:0 0 10px rgba(224,184,76,0.6); }
+
+.lgs-heroes{
+  position:relative; z-index:2; flex:1; width:100%;
+  display:flex; align-items:flex-end; justify-content:center; gap:2px;
+  padding:8px 4px 4px;
+}
+.lgs-hero-card{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  cursor:pointer; transition:transform .25s ease; flex:1; max-width:19%;
+}
+.lgs-hero-card.leader{ max-width:26%; z-index:3; }
+.lgs-hero-card:active{ transform:scale(0.96); }
+.lgs-portrait-wrap{
+  position:relative; width:100%; aspect-ratio:1/1.35; border-radius:14px;
+  overflow:visible; display:flex; align-items:flex-end; justify-content:center;
+}
+.lgs-glow-ring{
+  position:absolute; left:50%; bottom:6%; width:78%; height:22%;
+  transform:translateX(-50%); border-radius:50%;
+  background:radial-gradient(ellipse at center, var(--hero-aura,#3fe0d0) 0%, transparent 72%);
+  filter:blur(3px); opacity:0.85; animation:lgsGlowPulse 2.4s ease-in-out infinite;
+}
+@keyframes lgsGlowPulse{ 0%,100%{opacity:0.55;transform:translateX(-50%) scale(0.92);} 50%{opacity:0.95;transform:translateX(-50%) scale(1.05);} }
+.lgs-portrait-frame{
+  position:relative; width:92%; height:92%; border-radius:12px;
+  background:linear-gradient(180deg, rgba(30,20,45,0.85), rgba(10,6,16,0.92));
+  border:2px solid var(--hero-aura,#3fe0d0);
+  box-shadow:0 0 16px var(--hero-aura,#3fe0d0), inset 0 0 22px rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.lgs-hero-card.leader .lgs-portrait-frame{
+  border-color:var(--gold-bright); box-shadow:0 0 26px rgba(224,184,76,0.7), inset 0 0 22px rgba(0,0,0,0.55);
+}
+.lgs-portrait-frame svg{ width:82%; height:82%; filter:drop-shadow(0 6px 10px rgba(0,0,0,0.6)); }
+.lgs-crown{ position:absolute; top:-13px; left:50%; transform:translateX(-50%); font-size:18px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7)); }
+.lgs-corner{ position:absolute; width:12px; height:12px; border:2px solid var(--hero-aura,#3fe0d0); opacity:0.85; }
+.lgs-hero-card.leader .lgs-corner{ border-color:var(--gold-bright); }
+.lgs-corner.tl{ top:-2px; left:-2px; border-right:none; border-bottom:none; }
+.lgs-corner.tr{ top:-2px; right:-2px; border-left:none; border-bottom:none; }
+.lgs-corner.bl{ bottom:-2px; left:-2px; border-right:none; border-top:none; }
+.lgs-corner.br{ bottom:-2px; right:-2px; border-left:none; border-top:none; }
+.lgs-hero-name{ font-size:10.5px; font-weight:800; color:var(--text-light); white-space:nowrap; }
+.lgs-hero-lvl{ font-size:9px; color:var(--gold-bright); font-weight:700; }
+.lgs-hero-stars{ font-size:8px; color:var(--gold-bright); letter-spacing:1px; }
+
+.lgs-hero-detail{
+  position:relative; z-index:2; width:88%; max-width:420px; min-height:38px;
+  margin:8px auto 4px; text-align:center; font-size:11.5px; color:var(--text-dim);
+  background:rgba(10,6,18,0.5); border:1px solid var(--line); border-radius:10px; padding:8px 14px;
+}
+.lgs-hero-detail b{ color:var(--gold-bright); }
+
+.lgs-confirm{
+  position:relative; z-index:2; width:88%; max-width:420px;
+  margin:10px auto max(16px, env(safe-area-inset-bottom,0px));
+  padding:15px; border-radius:14px; font-size:15px; font-weight:900; letter-spacing:1px;
+  background:linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
+  color:#241505; border:1px solid var(--gold-bright);
+  box-shadow:0 6px 0 #5c4310, 0 10px 22px rgba(224,184,76,0.35);
+}
+.lgs-confirm:active{ transform:translateY(4px); box-shadow:0 2px 0 #5c4310; }
+
+
 /* ============================= TITLE SCREEN ============================= */
 #screen-title{
   align-items:center;justify-content:flex-start;
@@ -1549,6 +1661,33 @@ input{font-family:inherit;}
 
       </div>
     </div>
+  </div>
+
+  <!-- ============================= LEAGUE HERO SHOWCASE ============================= -->
+  <div id="screen-league-showcase" class="screen hidden">
+    <div class="lgs-bg">
+      <div class="particle-field" id="lgs-particles"></div>
+      <div class="lgs-rays"></div>
+      <div class="lgs-vignette"></div>
+    </div>
+    <div class="lgs-topbar">
+      <button class="lgs-back" id="lgs-back">←</button>
+      <div class="lgs-title">قـتـال 5×5</div>
+      <div class="lgs-spacer"></div>
+    </div>
+    <div class="lgs-banner">
+      <div class="lgs-banner-line"></div>
+      <div class="lgs-banner-text">فريقك جاهز للمعركة</div>
+      <div class="lgs-banner-line"></div>
+    </div>
+    <div class="lgs-power-row">
+      <span class="lgs-power-icon">🛡️</span>
+      <span class="lgs-power-label">قوة الفريق</span>
+      <span class="lgs-power-num" id="lgs-power-num">0</span>
+    </div>
+    <div class="lgs-heroes" id="lgs-heroes"></div>
+    <div class="lgs-hero-detail" id="lgs-hero-detail"></div>
+    <button class="lgs-confirm" id="lgs-confirm">⚔️ دخول المعركة</button>
   </div>
 
   <!-- ============================= LEAGUE BATTLE (5×5 FLAG CAPTURE) ============================= -->
@@ -3988,7 +4127,7 @@ function buildOnlineLeagueMatch(){
   // always fill up to a full 5v5 — missing real players just become bots
   while(blueSlots<5){ league.units.push(makeLeagueUnit('blue', blueSlots, classKeys[blueSlots%classKeys.length], lvl)); blueSlots++; }
   while(redSlots<5){ league.units.push(makeLeagueUnit('red', redSlots, classKeys[redSlots%classKeys.length], lvl)); redSlots++; }
-  launchLeagueScreen();
+  showLeagueShowcase();
 }
 
 function mpSend(obj){ if(mp.roomWs && mp.roomWs.readyState===1) mp.roomWs.send(JSON.stringify(obj)); }
@@ -4239,6 +4378,74 @@ function newLeagueState(){
   };
 }
 
+function initLgsParticles(){
+  var field = $('lgs-particles');
+  if(!field || field.childElementCount) return;
+  for(var i=0;i<20;i++){
+    var s = document.createElement('div');
+    s.className='spark';
+    s.style.left = (Math.random()*100)+'%';
+    s.style.bottom = '-10px';
+    s.style.setProperty('--drift', (Math.random()*60-30)+'px');
+    s.style.animationDuration = (4+Math.random()*4)+'s';
+    s.style.animationDelay = (Math.random()*5)+'s';
+    field.appendChild(s);
+  }
+}
+
+function leagueTeamPower(units){
+  return units.reduce(function(sum,u){
+    return sum + Math.round(u.maxhp*1.1 + u.atk*22 + u.def*16 + u.mag*18);
+  }, 0);
+}
+
+function showLeagueShowcase(){
+  initLgsParticles();
+  var blue = league.units.filter(function(u){ return u.team==='blue'; })
+    .slice().sort(function(a,b){ return (b.isPlayer?1:0)-(a.isPlayer?1:0); });
+  // reorder so the leader (player) renders in the visual center of the row
+  var order = [];
+  var leader = blue.filter(function(u){ return u.isPlayer; })[0] || blue[0];
+  var others = blue.filter(function(u){ return u!==leader; });
+  order = [others[0], others[1], leader, others[2], others[3]].filter(Boolean);
+
+  $('lgs-power-num').textContent = leagueTeamPower(blue).toLocaleString('en-US');
+
+  var wrap = $('lgs-heroes');
+  wrap.innerHTML = '';
+  order.forEach(function(u){
+    var c = CLASSES[u.cls];
+    var aura = u.isPlayer ? '#e0b84c' : (u.cls==='warrior' ? '#c9432f' : u.cls==='mage' ? '#8a6fd6' : '#3fe0d0');
+    var stars = u.isPlayer ? '★★★★★' : '★★★★';
+    var card = document.createElement('div');
+    card.className = 'lgs-hero-card' + (u.isPlayer ? ' leader' : '');
+    card.style.setProperty('--hero-aura', aura);
+    card.innerHTML =
+      '<div class="lgs-portrait-wrap">'+
+        '<div class="lgs-glow-ring"></div>'+
+        (u.isPlayer ? '<div class="lgs-crown">👑</div>' : '')+
+        '<div class="lgs-portrait-frame">'+
+          '<div class="lgs-corner tl"></div><div class="lgs-corner tr"></div>'+
+          '<div class="lgs-corner bl"></div><div class="lgs-corner br"></div>'+
+          heroSVG(u.cls, u.isPlayer ? 'legendary' : 'epic')+
+        '</div>'+
+      '</div>'+
+      '<div class="lgs-hero-name">'+(u.isPlayer ? (state.player.name||'أنت') : c.name)+'</div>'+
+      '<div class="lgs-hero-lvl">Lv.'+(state.player.level||1)+'</div>'+
+      '<div class="lgs-hero-stars">'+stars+'</div>';
+    card.addEventListener('click', function(){
+      $('lgs-hero-detail').innerHTML = '<b>'+c.icon+' '+c.name+'</b> — '+c.desc+
+        '<br>❤️ '+Math.round(u.maxhp)+' &nbsp; ⚔️ '+Math.round(u.atk)+' &nbsp; 🛡️ '+Math.round(u.def)+' &nbsp; 🔮 '+Math.round(u.mag);
+    });
+    wrap.appendChild(card);
+  });
+  // show the leader's info by default
+  $('lgs-hero-detail').innerHTML = '<b>'+CLASSES[leader.cls].icon+' '+CLASSES[leader.cls].name+'</b> — '+CLASSES[leader.cls].desc+
+    '<br>❤️ '+Math.round(leader.maxhp)+' &nbsp; ⚔️ '+Math.round(leader.atk)+' &nbsp; 🛡️ '+Math.round(leader.def)+' &nbsp; 🔮 '+Math.round(leader.mag);
+
+  showScreen('screen-league-showcase');
+}
+
 function launchLeagueScreen(){
   try{
     renderLeagueRoster();
@@ -4278,7 +4485,7 @@ function startLeagueMatch(){
   // red team: 5 AI enemies
   for(var j=0;j<5;j++) league.units.push(makeLeagueUnit('red', j, classKeys[j%classKeys.length], lvl));
 
-  launchLeagueScreen();
+  showLeagueShowcase();
 }
 
 function renderLeagueRoster(){
@@ -5199,6 +5406,8 @@ function wireEvents(){
   $('btn-league').addEventListener('click', startLeagueMatch);
   $('btn-league-online').addEventListener('click', startOnlineLeagueMatch);
   $('mp-wait-cancel').addEventListener('click', cancelOnlineWait);
+  $('lgs-confirm').addEventListener('click', launchLeagueScreen);
+  $('lgs-back').addEventListener('click', exitLeagueToTitle);
   $('lg-special').addEventListener('click', useLeagueSpecial);
   $('lg-ability').addEventListener('click', useLeagueAbility);
   $('btn-league-retreat').addEventListener('click', retreatFromLeague);
@@ -5258,90 +5467,6 @@ var Engine3D = (function(){
     return loadingPromise;
   }
 
-  function buildHumanoid(pal, opts){
-    opts = opts || {};
-    var T = window.THREE;
-    var g = new T.Group();
-    var mPrimary = new T.MeshStandardMaterial({color:pal.primary, roughness:0.6, metalness:0.15});
-    var mSecondary = new T.MeshStandardMaterial({color:pal.secondary, roughness:0.7});
-    var mMetal = new T.MeshStandardMaterial({color:pal.metal, roughness:0.35, metalness:0.7});
-    var mSkin = new T.MeshStandardMaterial({color:pal.skin, roughness:0.85});
-
-    var torso = new T.Mesh(new T.CylinderGeometry(0.32,0.38,0.82,8), mPrimary);
-    torso.position.y = 1.14;
-    g.add(torso);
-
-    var head = new T.Mesh(new T.SphereGeometry(0.25,10,8), mSkin);
-    head.position.y = 1.72;
-    g.add(head);
-
-    var hat = new T.Mesh(new T.ConeGeometry(0.27,0.22,8), mSecondary);
-    hat.position.y = 1.94;
-    g.add(hat);
-
-    var hipY = 0.76;
-    var legGeo = new T.CylinderGeometry(0.1,0.09,0.76,6);
-    var legLPivot = new T.Group(); legLPivot.position.set(-0.14,hipY,0);
-    var legL = new T.Mesh(legGeo, mSecondary); legL.position.set(0,-0.38,0); legLPivot.add(legL);
-    var legRPivot = new T.Group(); legRPivot.position.set(0.14,hipY,0);
-    var legR = new T.Mesh(legGeo, mSecondary); legR.position.set(0,-0.38,0); legRPivot.add(legR);
-    g.add(legLPivot); g.add(legRPivot);
-
-    var armGeo = new T.CylinderGeometry(0.075,0.07,0.7,6);
-    var shoulderY = 1.48;
-    var armLPivot = new T.Group(); armLPivot.position.set(-0.4,shoulderY,0);
-    var armL = new T.Mesh(armGeo, mSkin); armL.position.set(0,-0.35,0); armLPivot.add(armL);
-    var armRPivot = new T.Group(); armRPivot.position.set(0.4,shoulderY,0);
-    var armR = new T.Mesh(armGeo, mSkin); armR.position.set(0,-0.35,0); armRPivot.add(armR);
-    g.add(armLPivot); g.add(armRPivot);
-
-    var weapon = null;
-    if(opts.weapon==='sword'){
-      weapon = new T.Mesh(new T.BoxGeometry(0.06,0.6,0.06), mMetal);
-      weapon.position.set(0,-0.6,0.05);
-    } else if(opts.weapon==='staff'){
-      weapon = new T.Mesh(new T.CylinderGeometry(0.03,0.03,0.82,6), mSecondary);
-      weapon.position.set(0,-0.68,0);
-      var orb = new T.Mesh(new T.SphereGeometry(0.09,8,8), new T.MeshStandardMaterial({color:pal.primary, emissive:pal.primary, emissiveIntensity:0.6}));
-      orb.position.set(0,-1.02,0);
-      weapon.add(orb);
-    } else if(opts.weapon==='bow'){
-      weapon = new T.Mesh(new T.TorusGeometry(0.26,0.02,6,10,Math.PI), mSecondary);
-      weapon.rotation.z = Math.PI/2;
-      weapon.position.set(0,-0.48,0.05);
-    }
-    if(weapon) armRPivot.add(weapon);
-
-    var padGeo = new T.SphereGeometry(0.12,8,6);
-    var padL = new T.Mesh(padGeo, mMetal); padL.position.set(-0.4,1.55,0); g.add(padL);
-    var padR = new T.Mesh(padGeo, mMetal); padR.position.set(0.4,1.55,0); g.add(padR);
-
-    // small flowing cape plane behind the torso — adds silhouette read at a glance
-    var capeMat = new T.MeshStandardMaterial({color:pal.secondary, roughness:0.8, side:T.DoubleSide});
-    var cape = new T.Mesh(new T.PlaneGeometry(0.5,0.85,1,4), capeMat);
-    cape.position.set(0,1.02,-0.22);
-    cape.rotation.x = 0.18;
-    g.add(cape);
-
-    // faint emissive crest on the chest — a small heraldic accent
-    var crest = new T.Mesh(new T.ConeGeometry(0.05,0.1,4),
-      new T.MeshStandardMaterial({color:pal.aura||pal.primary, emissive:pal.aura||pal.primary, emissiveIntensity:0.5}));
-    crest.position.set(0,1.2,0.32); crest.rotation.x = Math.PI;
-    g.add(crest);
-
-    var aura = new T.Mesh(new T.RingGeometry(0.48,0.54,24),
-      new T.MeshBasicMaterial({color:pal.aura||pal.primary, side:T.DoubleSide, transparent:true, opacity:0.5}));
-    aura.rotation.x = -Math.PI/2; aura.position.y = 0.02;
-    g.add(aura);
-
-    g.userData = {
-      torso:torso, head:head, legLPivot:legLPivot, legRPivot:legRPivot,
-      armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, cape:cape, defending:false,
-      flashables:[mSkin, mPrimary]
-    };
-    return g;
-  }
-
   function shadeColor(hexInt, amt){
     var T = window.THREE;
     var c = new T.Color(hexInt);
@@ -5350,60 +5475,279 @@ var Engine3D = (function(){
   }
   function clampNum(v,a,b){ return Math.max(a,Math.min(b,v)); }
 
+  function buildHumanoid(pal, opts){
+    opts = opts || {};
+    var T = window.THREE;
+    var g = new T.Group();
+    var mPrimary   = new T.MeshStandardMaterial({color:pal.primary, roughness:0.55, metalness:0.18});
+    var mSecondary = new T.MeshStandardMaterial({color:pal.secondary, roughness:0.75, metalness:0.05});
+    var mMetal     = new T.MeshStandardMaterial({color:pal.metal, roughness:0.28, metalness:0.82});
+    var mSkin      = new T.MeshStandardMaterial({color:pal.skin, roughness:0.82, metalness:0.02});
+    var mLeather   = new T.MeshStandardMaterial({color:shadeColor(pal.secondary,-0.35), roughness:0.85});
+    var mEye       = new T.MeshStandardMaterial({color:0x1a1a22, roughness:0.4});
+    var mGlow      = new T.MeshStandardMaterial({color:pal.aura||pal.primary, emissive:pal.aura||pal.primary, emissiveIntensity:0.75});
+    var castRecv = function(m){ m.castShadow = true; m.receiveShadow = true; return m; };
+
+    // ---- torso / hips ----
+    var torso = castRecv(new T.Mesh(new T.CylinderGeometry(0.30,0.36,0.72,12), mPrimary));
+    torso.position.y = 1.22;
+    g.add(torso);
+    var hips = castRecv(new T.Mesh(new T.CylinderGeometry(0.34,0.30,0.24,12), mSecondary));
+    hips.position.y = 0.82;
+    g.add(hips);
+    var belt = castRecv(new T.Mesh(new T.TorusGeometry(0.335,0.028,6,16), mMetal));
+    belt.rotation.x = Math.PI/2; belt.position.y = 0.90;
+    g.add(belt);
+
+    // ---- neck / head ----
+    var neck = castRecv(new T.Mesh(new T.CylinderGeometry(0.09,0.11,0.12,8), mSkin));
+    neck.position.y = 1.62;
+    g.add(neck);
+    var head = castRecv(new T.Mesh(new T.SphereGeometry(0.24,14,12), mSkin));
+    head.position.y = 1.80;
+    g.add(head);
+    var eyeGeo = new T.SphereGeometry(0.028,6,6);
+    var eyeL = new T.Mesh(eyeGeo, mEye); eyeL.position.set(-0.09,1.81,0.205); g.add(eyeL);
+    var eyeR = new T.Mesh(eyeGeo, mEye); eyeR.position.set(0.09,1.81,0.205); g.add(eyeR);
+
+    // ---- class-flavored headwear ----
+    var hatStyle = opts.weapon==='staff' ? 'wizard' : (opts.weapon==='bow' ? 'hood' : 'helm');
+    if(hatStyle==='wizard'){
+      var brim = castRecv(new T.Mesh(new T.ConeGeometry(0.34,0.06,12), mSecondary));
+      brim.position.y = 1.97; g.add(brim);
+      var peak = castRecv(new T.Mesh(new T.ConeGeometry(0.19,0.42,10), mSecondary));
+      peak.position.y = 2.18; peak.rotation.z = 0.08; g.add(peak);
+      var peakTip = new T.Mesh(new T.SphereGeometry(0.035,6,6), mGlow);
+      peakTip.position.y = 2.40; g.add(peakTip);
+    } else if(hatStyle==='hood'){
+      var hood = castRecv(new T.Mesh(new T.ConeGeometry(0.27,0.34,10), mLeather));
+      hood.position.y = 2.00; g.add(hood);
+      var hoodBand = castRecv(new T.Mesh(new T.TorusGeometry(0.245,0.02,6,14), mMetal));
+      hoodBand.rotation.x = Math.PI/2; hoodBand.position.y = 1.90; g.add(hoodBand);
+    } else {
+      var helm = castRecv(new T.Mesh(new T.SphereGeometry(0.255,12,10,0,Math.PI*2,0,Math.PI*0.62), mMetal));
+      helm.position.y = 1.82; g.add(helm);
+      var crest = castRecv(new T.Mesh(new T.BoxGeometry(0.035,0.18,0.30), mGlow));
+      crest.position.set(0,2.06,0); g.add(crest);
+    }
+
+    // ---- shoulders / pauldrons ----
+    var padGeo = new T.SphereGeometry(0.135,10,8);
+    var padL = castRecv(new T.Mesh(padGeo, mMetal)); padL.position.set(-0.395,1.56,0); g.add(padL);
+    var padR = castRecv(new T.Mesh(padGeo, mMetal)); padR.position.set(0.395,1.56,0); g.add(padR);
+    var trimGeo = new T.TorusGeometry(0.14,0.018,6,14);
+    var trimL = new T.Mesh(trimGeo, mGlow); trimL.position.copy(padL.position); trimL.rotation.y=0.3; g.add(trimL);
+    var trimR = new T.Mesh(trimGeo, mGlow); trimR.position.copy(padR.position); trimR.rotation.y=-0.3; g.add(trimR);
+
+    // ---- arms + hands ----
+    var armGeo = new T.CylinderGeometry(0.072,0.066,0.68,8);
+    var handGeo = new T.SphereGeometry(0.075,8,8);
+    var shoulderY = 1.50;
+    var armLPivot = new T.Group(); armLPivot.position.set(-0.40,shoulderY,0);
+    var armL = castRecv(new T.Mesh(armGeo, mSkin)); armL.position.set(0,-0.34,0); armLPivot.add(armL);
+    var handL = castRecv(new T.Mesh(handGeo, mSkin)); handL.position.set(0,-0.70,0); armLPivot.add(handL);
+    var armRPivot = new T.Group(); armRPivot.position.set(0.40,shoulderY,0);
+    var armR = castRecv(new T.Mesh(armGeo, mSkin)); armR.position.set(0,-0.34,0); armRPivot.add(armR);
+    var handR = castRecv(new T.Mesh(handGeo, mSkin)); handR.position.set(0,-0.70,0); armRPivot.add(handR);
+    g.add(armLPivot); g.add(armRPivot);
+
+    // ---- legs + boots ----
+    var hipY = 0.72;
+    var legGeo = new T.CylinderGeometry(0.10,0.088,0.62,8);
+    var bootGeo = new T.CylinderGeometry(0.105,0.115,0.20,8);
+    var legLPivot = new T.Group(); legLPivot.position.set(-0.15,hipY,0);
+    var legL = castRecv(new T.Mesh(legGeo, mSecondary)); legL.position.set(0,-0.31,0); legLPivot.add(legL);
+    var bootL = castRecv(new T.Mesh(bootGeo, mLeather)); bootL.position.set(0,-0.66,0.03); legLPivot.add(bootL);
+    var legRPivot = new T.Group(); legRPivot.position.set(0.15,hipY,0);
+    var legR = castRecv(new T.Mesh(legGeo, mSecondary)); legR.position.set(0,-0.31,0); legRPivot.add(legR);
+    var bootR = castRecv(new T.Mesh(bootGeo, mLeather)); bootR.position.set(0,-0.66,0.03); legRPivot.add(bootR);
+    g.add(legLPivot); g.add(legRPivot);
+
+    // ---- weapon (attached to the right hand) ----
+    var weapon = null, weaponGlow = null;
+    if(opts.weapon==='sword'){
+      weapon = new T.Group();
+      var grip = castRecv(new T.Mesh(new T.CylinderGeometry(0.028,0.03,0.18,8), mLeather));
+      grip.position.y = -0.09; weapon.add(grip);
+      var guard = castRecv(new T.Mesh(new T.BoxGeometry(0.24,0.035,0.05), mMetal));
+      guard.position.y = 0.005; weapon.add(guard);
+      var blade = castRecv(new T.Mesh(new T.BoxGeometry(0.055,0.62,0.022), mMetal));
+      blade.position.y = 0.33; weapon.add(blade);
+      var tip = castRecv(new T.Mesh(new T.ConeGeometry(0.032,0.10,4), mMetal));
+      tip.position.y = 0.685; tip.rotation.y = Math.PI/4; weapon.add(tip);
+      var pommel = castRecv(new T.Mesh(new T.SphereGeometry(0.032,8,8), mMetal));
+      pommel.position.y = -0.19; weapon.add(pommel);
+      weapon.position.set(0.02,-0.62,0.03);
+      weapon.rotation.z = -0.12;
+    } else if(opts.weapon==='staff'){
+      weapon = new T.Group();
+      var shaft = castRecv(new T.Mesh(new T.CylinderGeometry(0.028,0.032,0.86,8), mSecondary));
+      weapon.add(shaft);
+      var wrap1 = new T.Mesh(new T.TorusGeometry(0.035,0.01,6,10), mMetal); wrap1.rotation.x=Math.PI/2; wrap1.position.y=0.1; weapon.add(wrap1);
+      var wrap2 = wrap1.clone(); wrap2.position.y=-0.15; weapon.add(wrap2);
+      var cradle = castRecv(new T.Mesh(new T.TorusGeometry(0.075,0.014,6,12), mMetal));
+      cradle.position.y = 0.46; weapon.add(cradle);
+      var orb = new T.Mesh(new T.SphereGeometry(0.11,12,10), mGlow);
+      orb.position.y = 0.46; weapon.add(orb);
+      weapon.position.set(0,-0.66,0);
+      weaponGlow = orb;
+    } else if(opts.weapon==='bow'){
+      weapon = new T.Group();
+      var upperLimb = castRecv(new T.Mesh(new T.TorusGeometry(0.30,0.022,6,12,Math.PI*0.62), mSecondary));
+      upperLimb.rotation.z = Math.PI/2 - 0.31; weapon.add(upperLimb);
+      var grip2 = castRecv(new T.Mesh(new T.CylinderGeometry(0.028,0.028,0.14,8), mLeather));
+      grip2.rotation.z = Math.PI/2; weapon.add(grip2);
+      var stringGeo = new T.CylinderGeometry(0.006,0.006,0.56,4);
+      var string = new T.Mesh(stringGeo, new T.MeshStandardMaterial({color:0xe8e0c8, roughness:0.5}));
+      string.position.x = 0.27; weapon.add(string);
+      weapon.position.set(0,-0.46,0.04);
+      weapon.rotation.y = 0.15;
+    }
+    if(weapon) armRPivot.add(weapon);
+
+    // ---- cape ----
+    var cape = castRecv(new T.Mesh(new T.PlaneGeometry(0.5,0.85,1,4), new T.MeshStandardMaterial({color:pal.secondary, roughness:0.8, side:T.DoubleSide})));
+    cape.position.set(0,1.08,-0.20);
+    cape.rotation.x = 0.18;
+    g.add(cape);
+
+    // ---- chest crest ----
+    var chestCrest = new T.Mesh(new T.OctahedronGeometry(0.06,0), mGlow);
+    chestCrest.position.set(0,1.30,0.31);
+    g.add(chestCrest);
+
+    // ---- magic circle aura at the feet ----
+    var aura = new T.Mesh(new T.RingGeometry(0.46,0.52,28),
+      new T.MeshBasicMaterial({color:pal.aura||pal.primary, side:T.DoubleSide, transparent:true, opacity:0.5}));
+    aura.rotation.x = -Math.PI/2; aura.position.y = 0.02;
+    g.add(aura);
+    var aura2 = new T.Mesh(new T.RingGeometry(0.58,0.60,28),
+      new T.MeshBasicMaterial({color:pal.aura||pal.primary, side:T.DoubleSide, transparent:true, opacity:0.28}));
+    aura2.rotation.x = -Math.PI/2; aura2.position.y = 0.015;
+    g.add(aura2);
+
+    g.userData = {
+      torso:torso, head:head, legLPivot:legLPivot, legRPivot:legRPivot,
+      armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, aura2:aura2, cape:cape,
+      chestCrest:chestCrest, weaponGlow:weaponGlow, defending:false,
+      flashables:[mSkin, mPrimary, mSecondary, mMetal]
+    };
+    return g;
+  }
+
   function buildCreature(def, seedColor){
     var T = window.THREE;
     var g = new T.Group();
     var scale = clampNum(0.7 + (def.hp/300), 0.7, 1.9);
-    var mBody = new T.MeshStandardMaterial({color:seedColor, roughness:0.65});
+    var mBody = new T.MeshStandardMaterial({color:seedColor, roughness:0.6});
     var mDark = new T.MeshStandardMaterial({color:shadeColor(seedColor,-0.4), roughness:0.7});
-    var mEye = new T.MeshStandardMaterial({color:0xffe08a, emissive:0xffe08a, emissiveIntensity:0.7});
+    var mBelly = new T.MeshStandardMaterial({color:shadeColor(seedColor,0.3), roughness:0.75});
+    var mEye = new T.MeshStandardMaterial({color:0xffe08a, emissive:0xffe08a, emissiveIntensity:0.85});
+    var mTooth = new T.MeshStandardMaterial({color:0xf2ead8, roughness:0.4});
+    var castRecv = function(m){ m.castShadow = true; m.receiveShadow = true; return m; };
 
-    var body = new T.Mesh(new T.SphereGeometry(0.5,10,8), mBody);
+    var body = castRecv(new T.Mesh(new T.SphereGeometry(0.5,14,10), mBody));
     body.position.y = 0.55;
     body.scale.set(1,0.9,1.15);
     g.add(body);
 
-    var head = new T.Mesh(new T.SphereGeometry(0.3,10,8), mBody);
+    var belly = castRecv(new T.Mesh(new T.SphereGeometry(0.34,10,8), mBelly));
+    belly.position.set(0,0.42,0.22); belly.scale.set(0.85,0.75,0.7);
+    g.add(belly);
+
+    var head = castRecv(new T.Mesh(new T.SphereGeometry(0.30,14,10), mBody));
     head.position.set(0,0.95,0.35);
     g.add(head);
 
-    var eyeGeo = new T.SphereGeometry(0.05,6,6);
-    var eyeL = new T.Mesh(eyeGeo, mEye); eyeL.position.set(-0.12,0.98,0.6);
-    var eyeR = new T.Mesh(eyeGeo, mEye); eyeR.position.set(0.12,0.98,0.6);
-    g.add(eyeL); g.add(eyeR);
+    var jaw = castRecv(new T.Mesh(new T.SphereGeometry(0.14,8,6), mDark));
+    jaw.position.set(0,0.82,0.55); jaw.scale.set(1,0.6,0.9);
+    g.add(jaw);
+    var toothGeo = new T.ConeGeometry(0.022,0.06,4);
+    var toothL = new T.Mesh(toothGeo, mTooth); toothL.position.set(-0.05,0.865,0.63); toothL.rotation.x=Math.PI; g.add(toothL);
+    var toothR = new T.Mesh(toothGeo, mTooth); toothR.position.set(0.05,0.865,0.63); toothR.rotation.x=Math.PI; g.add(toothR);
 
-    var legGeo = new T.CylinderGeometry(0.07,0.06,0.42,6);
-    [[-0.22,-0.22],[0.22,-0.22],[-0.22,0.18],[0.22,0.18]].forEach(function(pos){
-      var leg = new T.Mesh(legGeo, mDark);
+    var eyeGeo = new T.SphereGeometry(0.055,8,8);
+    var eyeL = new T.Mesh(eyeGeo, mEye); eyeL.position.set(-0.13,0.99,0.60); g.add(eyeL);
+    var eyeR = new T.Mesh(eyeGeo, mEye); eyeR.position.set(0.13,0.99,0.60); g.add(eyeR);
+
+    var legGeo = new T.CylinderGeometry(0.075,0.06,0.42,7);
+    var clawGeo = new T.ConeGeometry(0.045,0.09,5);
+    var legPositions = [[-0.22,-0.22],[0.22,-0.22],[-0.22,0.18],[0.22,0.18]];
+    legPositions.forEach(function(pos){
+      var leg = castRecv(new T.Mesh(legGeo, mDark));
       leg.position.set(pos[0],0.21,pos[1]);
       g.add(leg);
+      var claw = new T.Mesh(clawGeo, mTooth);
+      claw.position.set(pos[0],0.02,pos[1]+0.06); claw.rotation.x = Math.PI/2.3;
+      g.add(claw);
     });
 
+    // tail — a short chain of two tapered segments, wagged in idle animation
+    var tailBase = new T.Group(); tailBase.position.set(0,0.55,-0.42);
+    var tailSeg1 = castRecv(new T.Mesh(new T.CylinderGeometry(0.09,0.07,0.34,7), mDark));
+    tailSeg1.rotation.x = Math.PI/2.4; tailSeg1.position.z = -0.13;
+    tailBase.add(tailSeg1);
+    var tailTip = castRecv(new T.Mesh(new T.ConeGeometry(0.06,0.22,6), mDark));
+    tailTip.rotation.x = Math.PI/1.9; tailTip.position.z = -0.34;
+    tailBase.add(tailTip);
+    g.add(tailBase);
+
+    var hornGroup = null, wingGroup = null, spikeGroup = null;
     if(def.mag>10){
+      hornGroup = new T.Group();
       var hornGeo = new T.ConeGeometry(0.06,0.3,6);
-      var hL = new T.Mesh(hornGeo, mDark); hL.position.set(-0.14,1.25,0.3); hL.rotation.z=0.3;
-      var hR = new T.Mesh(hornGeo, mDark); hR.position.set(0.14,1.25,0.3); hR.rotation.z=-0.3;
-      g.add(hL); g.add(hR);
+      var hL = new T.Mesh(hornGeo, mDark); hL.position.set(-0.14,1.25,0.30); hL.rotation.z=0.3;
+      var hR = new T.Mesh(hornGeo, mDark); hR.position.set(0.14,1.25,0.30); hR.rotation.z=-0.3;
+      hornGroup.add(hL); hornGroup.add(hR);
+      g.add(hornGroup);
     }
     if(def.spd>10){
-      var wingGeo = new T.ConeGeometry(0.32,0.08,4);
-      var wL = new T.Mesh(wingGeo, mDark); wL.position.set(-0.5,0.7,0); wL.rotation.z=Math.PI/2.2;
-      var wR = new T.Mesh(wingGeo, mDark); wR.position.set(0.5,0.7,0); wR.rotation.z=-Math.PI/2.2;
-      g.add(wL); g.add(wR);
+      wingGroup = new T.Group();
+      var wingMat = new T.MeshStandardMaterial({color:shadeColor(seedColor,-0.25), roughness:0.6, side:T.DoubleSide});
+      var wingGeo = new T.ConeGeometry(0.34,0.09,4);
+      var wL = new T.Mesh(wingGeo, wingMat); wL.position.set(-0.52,0.72,0); wL.rotation.z=Math.PI/2.2;
+      var wR = new T.Mesh(wingGeo, wingMat); wR.position.set(0.52,0.72,0); wR.rotation.z=-Math.PI/2.2;
+      wingGroup.add(wL); wingGroup.add(wR);
+      g.add(wingGroup);
     }
+    if(def.atk>12){
+      spikeGroup = new T.Group();
+      var spikeGeo = new T.ConeGeometry(0.045,0.16,5);
+      for(var i=0;i<4;i++){
+        var sp = new T.Mesh(spikeGeo, mDark);
+        sp.position.set(0, 0.68+i*0.08, 0.05-i*0.15);
+        sp.rotation.x = -0.3;
+        spikeGroup.add(sp);
+      }
+      g.add(spikeGroup);
+    }
+    var bossGlow = null, crown = null;
     if(def.isBoss){
       body.scale.multiplyScalar(1.25);
-      var crown = new T.Mesh(new T.ConeGeometry(0.12,0.22,5),
-        new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.4}));
-      crown.position.set(0,1.35,0.25);
+      crown = new T.Group();
+      var crownBase = castRecv(new T.Mesh(new T.CylinderGeometry(0.17,0.19,0.08,10), new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.35, roughness:0.35, metalness:0.6})));
+      crownBase.position.set(0,1.32,0.22);
+      crown.add(crownBase);
+      for(var k=0;k<5;k++){
+        var spike = new T.Mesh(new T.ConeGeometry(0.035,0.16,5), new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.5, roughness:0.3, metalness:0.6}));
+        var ang = (k/5)*Math.PI*2;
+        spike.position.set(Math.cos(ang)*0.14, 1.40, 0.22+Math.sin(ang)*0.14);
+        crown.add(spike);
+      }
       g.add(crown);
-      var bossGlow = new T.Mesh(new T.RingGeometry(0.55,0.68,28),
+      bossGlow = new T.Mesh(new T.RingGeometry(0.55,0.68,28),
         new T.MeshBasicMaterial({color:0xff5c78, side:T.DoubleSide, transparent:true, opacity:0.55}));
       bossGlow.rotation.x = -Math.PI/2; bossGlow.position.y = 0.03;
       g.add(bossGlow);
-      g.userData_bossGlow = bossGlow;
+      var bossGlow2 = new T.Mesh(new T.RingGeometry(0.75,0.79,28),
+        new T.MeshBasicMaterial({color:0xff5c78, side:T.DoubleSide, transparent:true, opacity:0.28}));
+      bossGlow2.rotation.x = -Math.PI/2; bossGlow2.position.y = 0.025;
+      g.add(bossGlow2);
     }
-    g.userData = { body:body, head:head, baseY:0, flashables:[mBody], bossGlow:g.userData_bossGlow };
+    g.userData = {
+      body:body, head:head, tailBase:tailBase, wingGroup:wingGroup, baseY:0,
+      flashables:[mBody, mBelly], bossGlow:bossGlow, crown:crown
+    };
     g.scale.set(scale,scale,scale);
     return g;
   }
@@ -5417,6 +5761,19 @@ var Engine3D = (function(){
       var curve = k<0.5 ? (k/0.5) : (1-(k-0.5)/0.5);
       group.position.x = startX + dx*curve;
       if(k<1) requestAnimationFrame(step); else group.position.x = startX;
+    }
+    requestAnimationFrame(step);
+  }
+  function triggerSwing(group){
+    if(!group || !group.userData || !group.userData.armRPivot) return;
+    var arm = group.userData.armRPivot;
+    var start = performance.now(), dur = 340;
+    function step(now){
+      var k = Math.min(1,(now-start)/dur);
+      var curve = Math.sin(k*Math.PI);
+      arm.rotation.x = -curve*2.05;
+      arm.rotation.z = curve*0.35;
+      if(k<1) requestAnimationFrame(step); else { arm.rotation.x = 0; arm.rotation.z = 0; }
     }
     requestAnimationFrame(step);
   }
@@ -5445,30 +5802,44 @@ var Engine3D = (function(){
     if(!group || !group.userData) return;
     group.userData.defending = !!active;
   }
-  function animateHumanoidIdle(g, t){
+  function animateHumanoidIdle(g, t, moving){
     if(!g || !g.userData || !g.userData.armLPivot) return;
     var u = g.userData;
+    var amp = moving ? 1 : 0.32;
+    var speed = moving ? 4.2 : 1.3;
     g.position.y = Math.sin(t*1.6)*0.025;
+    if(u.torso) u.torso.scale.y = 1 + Math.sin(t*2.1)*0.012;
+    if(u.head) u.head.rotation.y = Math.sin(t*0.6)*0.09;
     if(u.defending){
       u.armLPivot.rotation.x = -1.15; u.armRPivot.rotation.x = -1.15;
+      u.legLPivot.rotation.x = 0; u.legRPivot.rotation.x = 0;
     } else {
-      u.armLPivot.rotation.x = Math.sin(t*1.3)*0.09;
-      u.armRPivot.rotation.x = Math.sin(t*1.3+Math.PI)*0.09;
+      u.armLPivot.rotation.x = Math.sin(t*speed)*0.09*amp;
+      u.armRPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.09*amp;
+      u.legLPivot.rotation.x = Math.sin(t*speed+Math.PI)*0.16*amp;
+      u.legRPivot.rotation.x = Math.sin(t*speed)*0.16*amp;
     }
-    u.legLPivot.rotation.x = Math.sin(t*1.3+Math.PI)*0.06;
-    u.legRPivot.rotation.x = Math.sin(t*1.3)*0.06;
-    if(u.cape) u.cape.rotation.x = 0.18 + Math.sin(t*1.1)*0.06;
+    if(u.cape) u.cape.rotation.x = 0.18 + Math.sin(t*1.1)*0.06 + (moving?0.1:0);
     if(u.aura) u.aura.rotation.z = t*0.5;
+    if(u.aura2) u.aura2.rotation.z = -t*0.32;
+    if(u.chestCrest) u.chestCrest.rotation.y = t*0.8;
+    if(u.weaponGlow) u.weaponGlow.material.emissiveIntensity = 0.6 + Math.sin(t*2.6)*0.25;
   }
   function animateCreatureIdle(g, t){
     if(!g || !g.userData) return;
-    g.position.y = (g.userData.baseY||0) + Math.sin(t*2.1)*0.05;
+    var u = g.userData;
+    g.position.y = (u.baseY||0) + Math.sin(t*2.1)*0.05;
     g.rotation.z = Math.sin(t*1.4)*0.02;
+    if(u.body) u.body.scale.y = 0.9 + Math.sin(t*2.4)*0.02;
+    if(u.tailBase) u.tailBase.rotation.y = Math.sin(t*2.6)*0.35;
+    if(u.wingGroup) u.wingGroup.rotation.z = Math.sin(t*5)*0.08;
+    if(u.crown) u.crown.rotation.y = t*0.4;
+    if(u.bossGlow) u.bossGlow.rotation.z = t*0.15;
   }
 
   return {
     ensureThree:ensureThree, buildHumanoid:buildHumanoid, buildCreature:buildCreature,
-    triggerLunge:triggerLunge, triggerTelegraph:triggerTelegraph, triggerFlash:triggerFlash,
+    triggerLunge:triggerLunge, triggerSwing:triggerSwing, triggerTelegraph:triggerTelegraph, triggerFlash:triggerFlash,
     setDefendPose:setDefendPose, animateHumanoidIdle:animateHumanoidIdle, animateCreatureIdle:animateCreatureIdle
   };
 })();
@@ -5483,11 +5854,14 @@ var Map3D = {
     var canvas = $('map3d-canvas');
     var renderer = new T.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.toneMapping = T.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     var scene = new T.Scene();
     scene.fog = new T.Fog(0x0a0614, 8, 22);
     var camera = new T.PerspectiveCamera(42,1,0.1,60);
     var hemi = new T.HemisphereLight(0xcbb8ff,0x141022,0.6); scene.add(hemi);
     var sun = new T.DirectionalLight(0xffe6b0,1.0); sun.position.set(4,7,3); scene.add(sun);
+    var rim = new T.DirectionalLight(0x8a6fd6,0.4); rim.position.set(-3,2,-4); scene.add(rim);
     var ground = new T.Group(); scene.add(ground);
     this.scene = scene; this.camera = camera; this.renderer = renderer; this.groundGroup = ground;
     this.resize();
@@ -5611,7 +5985,8 @@ var Map3D = {
     this.curZ += (this.targetZ-this.curZ)*Math.min(1,dt*10);
     if(this.player){
       this.player.position.set(this.curX,0,this.curZ);
-      Engine3D.animateHumanoidIdle(this.player, ts/1000);
+      var isMoving = Math.hypot(this.targetX-this.curX, this.targetZ-this.curZ) > 0.05;
+      Engine3D.animateHumanoidIdle(this.player, ts/1000, isMoving);
     }
     this.camera.position.set(this.curX, 5.6, this.curZ+4.4);
     this.camera.lookAt(this.curX, 0.6, this.curZ);
@@ -5636,14 +6011,27 @@ var Battle3D = {
     var canvas = $('battle3d-canvas');
     var renderer = new T.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFSoftShadowMap;
+    renderer.toneMapping = T.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
     var scene = new T.Scene();
     scene.fog = new T.Fog(0x120a1f,5,13);
     var camera = new T.PerspectiveCamera(42,1,0.1,40);
     var hemi = new T.HemisphereLight(0xbfa8ff,0x14101f,0.55); scene.add(hemi);
-    var key = new T.DirectionalLight(0xffe6b0,1.1); key.position.set(2.5,4,3); scene.add(key);
+    var key = new T.DirectionalLight(0xffe6b0,1.15); key.position.set(2.5,4,3);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024,1024);
+    key.shadow.camera.near = 1; key.shadow.camera.far = 12;
+    key.shadow.camera.left = -4; key.shadow.camera.right = 4;
+    key.shadow.camera.top = 4; key.shadow.camera.bottom = -4;
+    key.shadow.bias = -0.0025;
+    scene.add(key);
     var rim = new T.DirectionalLight(0x8a6fd6,0.6); rim.position.set(-3,2,-2); scene.add(rim);
+    var fill = new T.DirectionalLight(0xffffff,0.25); fill.position.set(-1,1.5,3.5); scene.add(fill);
     var ground = new T.Mesh(new T.CircleGeometry(6,28), new T.MeshStandardMaterial({color:0x1c1330, roughness:0.92}));
     ground.rotation.x = -Math.PI/2;
+    ground.receiveShadow = true;
     scene.add(ground);
     var ringGeo = new T.RingGeometry(3.4,3.65,40);
     var ringGlow = new T.Mesh(ringGeo, new T.MeshBasicMaterial({color:0x8a6fd6, transparent:true, opacity:0.35, side:T.DoubleSide}));
@@ -5740,7 +6128,7 @@ var Battle3D = {
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
     }).catch(function(){ /* offline or blocked — classic 2D battle stays fully playable */ });
   },
-  heroAttack: function(cls){ if(this.player) Engine3D.triggerLunge(this.player, cls==='heavy-attacking'?0.55:0.32); },
+  heroAttack: function(cls){ if(this.player){ Engine3D.triggerLunge(this.player, cls==='heavy-attacking'?0.55:0.32); Engine3D.triggerSwing(this.player); } },
   heroHurt: function(){ if(this.player) Engine3D.triggerFlash(this.player, 0xff5c78); },
   heroDefend: function(active){ if(this.player) Engine3D.setDefendPose(this.player, active); },
   enemyTelegraph: function(){ if(this.enemy) Engine3D.triggerTelegraph(this.enemy); },
@@ -5754,7 +6142,7 @@ var Battle3D = {
       this.player.position.x = (arena.heroX-0.5)*4.4;
       this.player.position.z = (arena.heroY-0.5)*3.2;
       this.player.rotation.y = 0.35;
-      Engine3D.animateHumanoidIdle(this.player, t);
+      Engine3D.animateHumanoidIdle(this.player, t, arena.joyActive);
     }
     if(this.enemy && typeof arena !== 'undefined'){
       this.enemy.position.x = (arena.enemyX-0.5)*4.4;
