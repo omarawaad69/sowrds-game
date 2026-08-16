@@ -441,7 +441,7 @@ input{font-family:inherit;}
   background:
     radial-gradient(ellipse at 50% 20%, rgba(138,111,214,0.22), transparent 55%),
     linear-gradient(180deg, #140a24, #0a0614 70%);
-  position:relative;
+  position:absolute; inset:0;
   overflow:hidden !important;
   display:block;
 }
@@ -999,6 +999,78 @@ input{font-family:inherit;}
   .char-portrait-wrap svg,.class-icon svg,.pbb-icon svg{ animation:none; }
 }
 
+/* ---- cinematic hero reveal stage (character sheet) ---- */
+.hero-reveal-stage{
+  position:relative; width:100%; height:190px; margin:0 auto 10px; border-radius:16px;
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(224,184,76,0.14), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(138,111,214,0.16), transparent 60%),
+    linear-gradient(180deg, #150c26, #0a0614 80%);
+  border:1px solid rgba(224,184,76,0.2);
+}
+.hr-rays{
+  position:absolute; inset:-20%; z-index:1;
+  background:conic-gradient(from 0deg, transparent 0deg, rgba(224,184,76,0.09) 8deg, transparent 16deg, transparent 40deg, rgba(224,184,76,0.06) 48deg, transparent 56deg, transparent 90deg, rgba(224,184,76,0.09) 98deg, transparent 106deg, transparent 140deg, rgba(224,184,76,0.06) 148deg, transparent 156deg, transparent 190deg, rgba(224,184,76,0.09) 198deg, transparent 206deg, transparent 260deg, rgba(224,184,76,0.06) 268deg, transparent 276deg, transparent 320deg, rgba(224,184,76,0.08) 328deg, transparent 336deg);
+  animation:hrRaysSpin 22s linear infinite;
+  opacity:0.85;
+}
+@keyframes hrRaysSpin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+.hr-rarity-ring{
+  position:absolute; width:120px; height:120px; border-radius:50%; z-index:2;
+  border:2px solid var(--gold-dim);
+  box-shadow:0 0 34px 4px rgba(224,184,76,0.35), inset 0 0 20px rgba(224,184,76,0.18);
+  animation:hrRingPulse 2.4s ease-in-out infinite;
+}
+.hr-rarity-ring::before{
+  content:''; position:absolute; inset:-9px; border-radius:50%;
+  border:1px dashed rgba(224,184,76,0.4); animation:hrRingSpin 14s linear infinite;
+}
+@keyframes hrRingPulse{ 0%,100%{ transform:scale(1); opacity:0.85; } 50%{ transform:scale(1.045); opacity:1; } }
+@keyframes hrRingSpin{ from{transform:rotate(0deg);} to{transform:rotate(-360deg);} }
+.hr-particles{ position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden; }
+.hr-particles span{
+  position:absolute; bottom:-6px; width:3px; height:3px; border-radius:50%;
+  background:var(--gold-bright); box-shadow:0 0 6px 1px rgba(224,184,76,0.8);
+  animation:hrParticleFloat linear infinite;
+}
+@keyframes hrParticleFloat{
+  0%{ transform:translateY(0) translateX(0); opacity:0; }
+  10%{ opacity:1; }
+  90%{ opacity:0.7; }
+  100%{ transform:translateY(-170px) translateX(var(--drift,8px)); opacity:0; }
+}
+.hero-reveal-stage .char-portrait-wrap{
+  position:relative; z-index:4; width:120px; height:120px; margin:0;
+  background:radial-gradient(circle at 35% 30%, rgba(43,31,69,0.5), transparent 70%);
+  border:none; box-shadow:none; perspective:600px;
+}
+.hero-reveal-stage .char-portrait-wrap svg{
+  animation:hero3dTurnBig 6s ease-in-out infinite;
+  filter:drop-shadow(0 14px 18px rgba(0,0,0,0.55));
+}
+@keyframes hero3dTurnBig{
+  0%,100%{ transform:rotateY(-20deg) rotateX(3deg) scale(1); }
+  50%{ transform:rotateY(20deg) rotateX(-3deg) scale(1.03); }
+}
+.hr-ground-glow{
+  position:absolute; left:50%; bottom:14px; transform:translateX(-50%); z-index:2;
+  width:120px; height:22px; border-radius:50%;
+  background:radial-gradient(ellipse at center, rgba(224,184,76,0.55), transparent 72%);
+  filter:blur(3px); animation:hrRingPulse 2.4s ease-in-out infinite;
+}
+.hr-name-plate{ position:absolute; bottom:8px; left:50%; transform:translateX(-50%); z-index:5; text-align:center; }
+.hr-name{ font-size:15px; font-weight:800; color:var(--gold-bright); text-shadow:0 2px 6px rgba(0,0,0,0.8); }
+.hr-rarity-tag{
+  font-size:9.5px; font-weight:700; margin-top:2px; letter-spacing:0.5px;
+  color:var(--bg-dark); background:var(--gold-bright); display:inline-block;
+  padding:1px 9px; border-radius:8px;
+}
+@media (prefers-reduced-motion: reduce){
+  .hr-rays, .hr-rarity-ring, .hr-rarity-ring::before, .hr-particles span, .hero-reveal-stage .char-portrait-wrap svg, .hr-ground-glow{ animation:none; }
+}
+
 /* ============================= RARITY SYSTEM ============================= */
 .rarity-common{color:#9aa3b5;}
 .rarity-rare{color:var(--teal);}
@@ -1019,7 +1091,7 @@ input{font-family:inherit;}
 #screen-league{
   background:var(--bg-void);
   overflow:hidden !important;
-  position:relative;
+  position:absolute; inset:0;
   display:block;
 }
 .league-header{
@@ -1306,10 +1378,20 @@ input{font-family:inherit;}
 
   <!-- ============================= CHARACTER MODAL ============================= -->
   <div id="modal-character" class="modal-overlay hidden">
-    <div class="modal-sheet ornate-corners">
+    <div class="modal-sheet ornate-corners char-sheet">
       <div class="modal-head"><h2>👤 بطاقة البطل</h2><button class="modal-close" data-close="modal-character">✕</button></div>
       <div class="modal-body">
-        <div class="char-portrait-wrap" id="char-portrait-wrap"></div>
+        <div class="hero-reveal-stage" id="hero-reveal-stage">
+          <div class="hr-rays"></div>
+          <div class="hr-rarity-ring" id="hr-rarity-ring"></div>
+          <div class="hr-particles" id="hr-particles"></div>
+          <div class="char-portrait-wrap" id="char-portrait-wrap"></div>
+          <div class="hr-ground-glow"></div>
+          <div class="hr-name-plate">
+            <div class="hr-name" id="hr-hero-name">البطل</div>
+            <div class="hr-rarity-tag" id="hr-rarity-tag">عادي</div>
+          </div>
+        </div>
         <div class="stats-grid" id="char-stats"></div>
         <div class="section-title">التجهيزات الحالية</div>
         <div id="char-equip-list" style="display:flex;flex-direction:column;gap:8px;"></div>
@@ -1764,67 +1846,132 @@ function getEquippedRarity(p){
   });
   return RARITY_ORDER[best];
 }
+/* ============================================================
+   HERO PORTRAIT (SVG) — high-detail in-game character graphics.
+   Each class gets a distinct silhouette: ornate horned/crested
+   helmet, layered pauldrons with rivets, a flowing multi-tone
+   cape, glowing rune accents and a proper ground-contact glow —
+   built to read as a premium "hero reveal" portrait, not just a
+   battle icon.
+   ============================================================ */
 function heroSVG(cls, rarity){
   var pal = CLASS_PALETTE[cls] || CLASS_PALETTE.warrior;
   var aura = RARITY_COLORS[rarity] || RARITY_COLORS.common;
   var uid = 'h'+(svgUidCounter++);
-  var weapon = '';
+
+  var helmet = '', weapon = '', pauldrons = '', chestEmblem = '';
+
   if(cls==='mage'){
-    weapon = '<rect x="68.4" y="6" width="3.2" height="52" rx="1.6" fill="#3a2814"/>'+
-             '<rect x="68.4" y="6" width="3.2" height="52" rx="1.6" fill="url(#staffshine'+uid+')" opacity="0.5"/>'+
-             '<circle cx="70" cy="6" r="7.5" fill="'+aura+'" opacity="0.95"/>'+
-             '<circle cx="70" cy="6" r="12" fill="'+aura+'" opacity="0.3"/>'+
-             '<circle cx="70" cy="6" r="3" fill="#fff" opacity="0.85"/>';
+    helmet =
+      '<path d="M35 24 Q50 4 65 24 Q65 15 58 10 Q50 3 42 10 Q35 15 35 24 Z" fill="url(#hood'+uid+')"/>'+
+      '<path d="M35 24 Q42 14 50 12 Q44 18 40 25 Z" fill="#fff" opacity="0.12"/>'+
+      '<circle cx="50" cy="11" r="2.6" fill="'+aura+'"/>'+
+      '<circle cx="50" cy="11" r="5.2" fill="'+aura+'" opacity="0.35"/>';
+    weapon =
+      '<rect x="68.4" y="4" width="3.2" height="56" rx="1.6" fill="#3a2814"/>'+
+      '<rect x="68.4" y="4" width="3.2" height="56" rx="1.6" fill="url(#staffshine'+uid+')" opacity="0.5"/>'+
+      '<path d="M64 8 L70 -2 L76 8 Z" fill="'+pal.metal+'" opacity="0.9"/>'+
+      '<circle cx="70" cy="4" r="8" fill="'+aura+'" opacity="0.95"/>'+
+      '<circle cx="70" cy="4" r="13" fill="'+aura+'" opacity="0.3"/>'+
+      '<circle cx="70" cy="4" r="3.2" fill="#fff" opacity="0.9"/>';
+    pauldrons =
+      '<path d="M33 51 Q29 44 36 41 Q42 44 40 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
+      '<path d="M67 51 Q71 44 64 41 Q58 44 60 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>';
+    chestEmblem = '<circle cx="50" cy="60" r="4.5" fill="none" stroke="'+aura+'" stroke-width="1.3" opacity="0.85"/>'+
+      '<circle cx="50" cy="60" r="1.6" fill="'+aura+'"/>';
   } else if(cls==='archer'){
-    weapon = '<path d="M76 10 Q92 36 76 62" stroke="'+pal.metal+'" stroke-width="3" fill="none" stroke-linecap="round"/>'+
-             '<line x1="76" y1="10" x2="76" y2="62" stroke="#d8d0c0" stroke-width="1.2"/>'+
-             '<path d="M76 34 L84 34" stroke="#d8d0c0" stroke-width="1" opacity="0.7"/>';
+    helmet =
+      '<path d="M35 26 Q38 12 50 10 Q62 12 65 26 Q58 18 50 17 Q42 18 35 26 Z" fill="url(#hood'+uid+')"/>'+
+      '<path d="M45 12 L42 2 M55 12 L58 2" stroke="'+pal.metal+'" stroke-width="1.6" stroke-linecap="round"/>'+
+      '<circle cx="42" cy="2" r="1.6" fill="'+aura+'"/><circle cx="58" cy="2" r="1.6" fill="'+aura+'"/>';
+    weapon =
+      '<path d="M76 8 Q94 36 76 64" stroke="'+pal.metal+'" stroke-width="3.2" fill="none" stroke-linecap="round"/>'+
+      '<path d="M76 8 Q94 36 76 64" stroke="#fff" stroke-width="1" fill="none" opacity="0.4"/>'+
+      '<line x1="76" y1="8" x2="76" y2="64" stroke="#e8e0cc" stroke-width="1.1"/>'+
+      '<path d="M76 34 L86 34" stroke="#e8e0cc" stroke-width="1" opacity="0.75"/>'+
+      '<path d="M76 34 L67 30 L70 34 L67 38 Z" fill="'+pal.metal+'"/>';
+    pauldrons =
+      '<path d="M32 51 Q27 45 35 40 Q43 44 41 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
+      '<path d="M68 51 Q73 45 65 40 Q57 44 59 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>';
+    chestEmblem = '<path d="M46 58 L50 63 L54 58" stroke="'+aura+'" stroke-width="1.3" fill="none" opacity="0.85"/>';
   } else {
-    weapon = '<g transform="translate(70,34) rotate(24)">'+
-               '<rect x="-3.2" y="-26" width="6.4" height="42" rx="2.4" fill="url(#blade'+uid+')" stroke="#e8e2d0" stroke-width="0.6"/>'+
-               '<rect x="-1" y="-24" width="2" height="38" rx="1" fill="#fff" opacity="0.5"/>'+
-               '<rect x="-9" y="-29" width="18" height="6.5" rx="2" fill="#4a3320"/>'+
-               '<rect x="-2.6" y="16" width="5.2" height="10" rx="2" fill="#3a2814"/>'+
-             '</g>';
+    helmet =
+      '<path d="M34 26 Q34 10 50 8 Q66 10 66 26 Q66 16 58 13 Q50 10 42 13 Q34 16 34 26 Z" fill="url(#hood'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
+      '<path d="M46 9 L44 -3 L48 6 M54 9 L56 -3 L52 6" fill="'+pal.metal+'" opacity="0.95"/>'+
+      '<path d="M34 22 Q30 24 30 30" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.8"/>'+
+      '<path d="M66 22 Q70 24 70 30" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.8"/>';
+    weapon =
+      '<g transform="translate(70,32) rotate(22)">'+
+        '<rect x="-3.4" y="-30" width="6.8" height="48" rx="2.6" fill="url(#blade'+uid+')" stroke="#e8e2d0" stroke-width="0.6"/>'+
+        '<rect x="-1.1" y="-28" width="2.2" height="43" rx="1" fill="#fff" opacity="0.55"/>'+
+        '<path d="M-3.4 -30 L0 -36 L3.4 -30 Z" fill="#f4f0e2"/>'+
+        '<rect x="-10" y="-33.5" width="20" height="7" rx="2.4" fill="#4a3320" stroke="'+pal.metal+'" stroke-width="0.8"/>'+
+        '<rect x="-2.8" y="18" width="5.6" height="11" rx="2.2" fill="#3a2814"/>'+
+        '<circle cx="0" cy="30" r="3.4" fill="'+pal.metal+'"/>'+
+      '</g>';
+    pauldrons =
+      '<path d="M31 51 Q25 43 36 38 Q46 43 43 53 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.2"/>'+
+      '<path d="M69 51 Q75 43 64 38 Q54 43 57 53 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.2"/>'+
+      '<circle cx="35" cy="45" r="1.6" fill="'+pal.metal+'"/><circle cx="65" cy="45" r="1.6" fill="'+pal.metal+'"/>';
+    chestEmblem = '<path d="M50 55 L54 61 L50 67 L46 61 Z" fill="none" stroke="'+aura+'" stroke-width="1.3" opacity="0.85"/>';
   }
+
   var ring = rarity!=='common' ? '<circle cx="50" cy="50" r="46" fill="none" stroke="'+aura+'" stroke-width="2" opacity="0.75"/>'+
              '<circle cx="50" cy="50" r="46" fill="none" stroke="'+aura+'" stroke-width="5" opacity="0.18"/>' : '';
-  var cape = cls==='warrior' ? '<path d="M33 52 Q24 78 30 96 Q40 84 40 60 Z" fill="url(#cape'+uid+')" opacity="0.92"/>' :
-             '<path d="M35 50 Q28 76 33 96 Q41 82 40 58 Z" fill="url(#cape'+uid+')" opacity="0.85"/>';
-  var groundShadow = '<ellipse cx="50" cy="97" rx="22" ry="4.2" fill="#000" opacity="0.4"/>';
+  var mythicSparks = rarity==='mythic' || rarity==='legendary' ?
+    '<circle cx="22" cy="30" r="1.4" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>'+
+    '<circle cx="78" cy="38" r="1.2" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2.2s" begin="0.4s" repeatCount="indefinite"/></circle>'+
+    '<circle cx="26" cy="70" r="1.1" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.9s" repeatCount="indefinite"/></circle>' : '';
+  var cape = cls==='warrior' ? '<path d="M31 50 Q19 76 27 98 Q40 86 41 58 Z" fill="url(#cape'+uid+')" opacity="0.94"/>'+
+             '<path d="M31 50 Q19 76 27 98 Q40 86 41 58 Z" fill="none" stroke="'+aura+'" stroke-width="0.6" opacity="0.4"/>' :
+             '<path d="M34 49 Q24 74 31 98 Q42 84 41 56 Z" fill="url(#cape'+uid+')" opacity="0.88"/>';
+  var groundShadow = '<ellipse cx="50" cy="97" rx="23" ry="4.4" fill="#000" opacity="0.42"/>'+
+    '<ellipse cx="50" cy="97" rx="14" ry="2.4" fill="'+aura+'" opacity="0.28"/>';
+
   return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
     '<defs>'+
-      '<radialGradient id="aura'+uid+'" cx="50%" cy="42%" r="62%">'+
-        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.5"/>'+
+      '<radialGradient id="aura'+uid+'" cx="50%" cy="40%" r="65%">'+
+        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.55"/>'+
+        '<stop offset="60%" stop-color="'+aura+'" stop-opacity="0.12"/>'+
         '<stop offset="100%" stop-color="'+aura+'" stop-opacity="0"/>'+
       '</radialGradient>'+
       '<linearGradient id="body'+uid+'" x1="0" y1="0" x2="0.55" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.primary+'"/>'+
-        '<stop offset="62%" stop-color="'+pal.secondary+'"/>'+
+        '<stop offset="55%" stop-color="'+pal.secondary+'"/>'+
         '<stop offset="100%" stop-color="#050308"/>'+
+      '</linearGradient>'+
+      '<linearGradient id="hood'+uid+'" x1="0" y1="0" x2="0.4" y2="1">'+
+        '<stop offset="0%" stop-color="'+pal.secondary+'"/>'+
+        '<stop offset="100%" stop-color="#0a0710"/>'+
       '</linearGradient>'+
       '<linearGradient id="cape'+uid+'" x1="0" y1="0" x2="1" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.secondary+'"/>'+
-        '<stop offset="100%" stop-color="#0c0810"/>'+
+        '<stop offset="65%" stop-color="#150e22"/>'+
+        '<stop offset="100%" stop-color="#04030a"/>'+
       '</linearGradient>'+
       '<linearGradient id="blade'+uid+'" x1="0" y1="0" x2="1" y2="0">'+
-        '<stop offset="0%" stop-color="#f4f0e2"/>'+
-        '<stop offset="55%" stop-color="'+pal.metal+'"/>'+
-        '<stop offset="100%" stop-color="#8a8478"/>'+
+        '<stop offset="0%" stop-color="#fbf8ee"/>'+
+        '<stop offset="50%" stop-color="'+pal.metal+'"/>'+
+        '<stop offset="100%" stop-color="#7a746a"/>'+
       '</linearGradient>'+
       '<linearGradient id="staffshine'+uid+'" x1="0" y1="0" x2="1" y2="0">'+
         '<stop offset="0%" stop-color="#fff" stop-opacity="0.5"/>'+
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
       '</linearGradient>'+
       '<radialGradient id="skinshade'+uid+'" cx="33%" cy="27%" r="72%">'+
-        '<stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.42"/>'+
         '<stop offset="45%" stop-color="#fff" stop-opacity="0.06"/>'+
-        '<stop offset="100%" stop-color="#000" stop-opacity="0.22"/>'+
+        '<stop offset="100%" stop-color="#000" stop-opacity="0.24"/>'+
       '</radialGradient>'+
       '<linearGradient id="rim'+uid+'" x1="0" y1="0" x2="1" y2="0">'+
-        '<stop offset="0%" stop-color="#fff" stop-opacity="0.55"/>'+
-        '<stop offset="18%" stop-color="#fff" stop-opacity="0"/>'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.6"/>'+
+        '<stop offset="16%" stop-color="#fff" stop-opacity="0"/>'+
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
+      '</linearGradient>'+
+      '<linearGradient id="rimR'+uid+'" x1="1" y1="0" x2="0" y2="0">'+
+        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.5"/>'+
+        '<stop offset="20%" stop-color="'+aura+'" stop-opacity="0"/>'+
+        '<stop offset="100%" stop-color="'+aura+'" stop-opacity="0"/>'+
       '</linearGradient>'+
     '</defs>'+
     '<circle cx="50" cy="50" r="48" fill="url(#aura'+uid+')"/>'+
@@ -1832,24 +1979,27 @@ function heroSVG(cls, rarity){
     cape+
     weapon+
     '<path d="M27 95 Q50 56 73 95 Z" fill="url(#body'+uid+')"/>'+
-    '<path d="M27 95 Q50 56 73 95 L73 95 Q52 70 27 95 Z" fill="#000" opacity="0.16"/>'+
-    '<path d="M28.5 92 Q42 60 49 57" stroke="url(#rim'+uid+')" stroke-width="2.4" fill="none" opacity="0.9"/>'+
+    '<path d="M27 95 Q50 56 73 95 L73 95 Q52 70 27 95 Z" fill="#000" opacity="0.18"/>'+
+    '<path d="M28.5 92 Q42 60 49 57" stroke="url(#rim'+uid+')" stroke-width="2.6" fill="none" opacity="0.92"/>'+
+    '<path d="M71.5 92 Q58 60 51 57" stroke="url(#rimR'+uid+')" stroke-width="2.2" fill="none" opacity="0.75"/>'+
+    pauldrons+
     '<rect x="36" y="49" width="28" height="30" rx="10" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.6"/>'+
-    '<rect x="36" y="49" width="13" height="30" rx="10" fill="#fff" opacity="0.09"/>'+
-    '<rect x="57" y="49" width="7" height="30" rx="6" fill="#000" opacity="0.18"/>'+
+    '<rect x="36" y="49" width="13" height="30" rx="10" fill="#fff" opacity="0.1"/>'+
+    '<rect x="57" y="49" width="7" height="30" rx="6" fill="#000" opacity="0.2"/>'+
+    chestEmblem+
     '<circle cx="50" cy="36" r="15.8" fill="'+pal.skin+'"/>'+
     '<circle cx="50" cy="36" r="15.8" fill="url(#skinshade'+uid+')"/>'+
-    '<ellipse cx="43.5" cy="29.5" rx="4.4" ry="3" fill="#fff" opacity="0.35"/>'+
-    '<path d="M33 32 Q50 12 67 32 Q67 22 50 18 Q33 22 33 32 Z" fill="'+pal.secondary+'"/>'+
-    '<path d="M33 32 Q40 22 50 19 Q42 24 37 33 Z" fill="#fff" opacity="0.1"/>'+
+    '<ellipse cx="43.5" cy="29.5" rx="4.4" ry="3" fill="#fff" opacity="0.4"/>'+
+    helmet+
     '<path d="M42.5 39 Q44 37.3 45.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
     '<path d="M54.5 39 Q56 37.3 57.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
     '<circle cx="44" cy="37.2" r="2.1" fill="#241708"/>'+
     '<circle cx="56" cy="37.2" r="2.1" fill="#241708"/>'+
-    '<circle cx="44.6" cy="36.6" r="0.6" fill="#fff" opacity="0.8"/>'+
-    '<circle cx="56.6" cy="36.6" r="0.6" fill="#fff" opacity="0.8"/>'+
+    '<circle cx="44.6" cy="36.6" r="0.6" fill="#fff" opacity="0.85"/>'+
+    '<circle cx="56.6" cy="36.6" r="0.6" fill="#fff" opacity="0.85"/>'+
     '<path d="M46 43.5 Q50 45.5 54 43.5" stroke="#5a3d24" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.55"/>'+
     ring+
+    mythicSparks+
   '</svg>';
 }
 
@@ -2862,10 +3012,37 @@ function buyFromShop(id, kind){
 /* ============================================================
    CHARACTER SCREEN
    ============================================================ */
+function spawnHeroRevealParticles(color){
+  var box = $('hr-particles');
+  if(!box) return;
+  box.innerHTML = '';
+  var count = 14;
+  for(var i=0;i<count;i++){
+    var s = document.createElement('span');
+    var left = 10 + Math.random()*80;
+    var dur = 2.4 + Math.random()*2.2;
+    var delay = Math.random()*3.5;
+    var drift = (Math.random()*24-12).toFixed(0)+'px';
+    s.style.left = left+'%';
+    s.style.background = color;
+    s.style.boxShadow = '0 0 6px 1px '+color+'cc';
+    s.style.setProperty('--drift', drift);
+    s.style.animationDuration = dur+'s';
+    s.style.animationDelay = delay+'s';
+    box.appendChild(s);
+  }
+}
 function openCharacterScreen(){
   var p = state.player;
   var rarity = getEquippedRarity(p);
+  var rarityColor = RARITY_COLORS[rarity] || RARITY_COLORS.common;
   $('char-portrait-wrap').innerHTML = heroSVG(p.cls, rarity);
+  $('hr-hero-name').textContent = p.name || 'البطل';
+  $('hr-rarity-tag').textContent = RARITY_LABELS[rarity] || 'عادي';
+  var ring = $('hr-rarity-ring');
+  ring.style.borderColor = rarityColor;
+  ring.style.boxShadow = '0 0 34px 4px '+rarityColor+'59, inset 0 0 20px '+rarityColor+'30';
+  spawnHeroRevealParticles(rarityColor);
   var stats = [
     ['❤️ صحة', p.hp+' / '+p.maxHp],
     ['💧 مانا', p.mp+' / '+p.maxMp],
@@ -5086,6 +5263,19 @@ var Engine3D = (function(){
     var padL = new T.Mesh(padGeo, mMetal); padL.position.set(-0.4,1.55,0); g.add(padL);
     var padR = new T.Mesh(padGeo, mMetal); padR.position.set(0.4,1.55,0); g.add(padR);
 
+    // small flowing cape plane behind the torso — adds silhouette read at a glance
+    var capeMat = new T.MeshStandardMaterial({color:pal.secondary, roughness:0.8, side:T.DoubleSide});
+    var cape = new T.Mesh(new T.PlaneGeometry(0.5,0.85,1,4), capeMat);
+    cape.position.set(0,1.02,-0.22);
+    cape.rotation.x = 0.18;
+    g.add(cape);
+
+    // faint emissive crest on the chest — a small heraldic accent
+    var crest = new T.Mesh(new T.ConeGeometry(0.05,0.1,4),
+      new T.MeshStandardMaterial({color:pal.aura||pal.primary, emissive:pal.aura||pal.primary, emissiveIntensity:0.5}));
+    crest.position.set(0,1.2,0.32); crest.rotation.x = Math.PI;
+    g.add(crest);
+
     var aura = new T.Mesh(new T.RingGeometry(0.48,0.54,24),
       new T.MeshBasicMaterial({color:pal.aura||pal.primary, side:T.DoubleSide, transparent:true, opacity:0.5}));
     aura.rotation.x = -Math.PI/2; aura.position.y = 0.02;
@@ -5093,7 +5283,7 @@ var Engine3D = (function(){
 
     g.userData = {
       torso:torso, head:head, legLPivot:legLPivot, legRPivot:legRPivot,
-      armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, defending:false,
+      armLPivot:armLPivot, armRPivot:armRPivot, aura:aura, cape:cape, defending:false,
       flashables:[mSkin, mPrimary]
     };
     return g;
@@ -5154,8 +5344,13 @@ var Engine3D = (function(){
         new T.MeshStandardMaterial({color:0xe0b84c, emissive:0xe0b84c, emissiveIntensity:0.4}));
       crown.position.set(0,1.35,0.25);
       g.add(crown);
+      var bossGlow = new T.Mesh(new T.RingGeometry(0.55,0.68,28),
+        new T.MeshBasicMaterial({color:0xff5c78, side:T.DoubleSide, transparent:true, opacity:0.55}));
+      bossGlow.rotation.x = -Math.PI/2; bossGlow.position.y = 0.03;
+      g.add(bossGlow);
+      g.userData_bossGlow = bossGlow;
     }
-    g.userData = { body:body, head:head, baseY:0, flashables:[mBody] };
+    g.userData = { body:body, head:head, baseY:0, flashables:[mBody], bossGlow:g.userData_bossGlow };
     g.scale.set(scale,scale,scale);
     return g;
   }
@@ -5209,6 +5404,7 @@ var Engine3D = (function(){
     }
     u.legLPivot.rotation.x = Math.sin(t*1.3+Math.PI)*0.06;
     u.legRPivot.rotation.x = Math.sin(t*1.3)*0.06;
+    if(u.cape) u.cape.rotation.x = 0.18 + Math.sin(t*1.1)*0.06;
     if(u.aura) u.aura.rotation.z = t*0.5;
   }
   function animateCreatureIdle(g, t){
@@ -5374,6 +5570,13 @@ var Map3D = {
 /* ---- battle 3D scene ---- */
 var Battle3D = {
   scene:null, camera:null, renderer:null, player:null, enemy:null, raf:null,
+  ground:null, ambientParticles:null, currentZone:null,
+  ZONE_ENV: {
+    grass: { fog:0x18321f, ground:0x1d3a22, ground2:0x2a5230, rim:0x8ee06a, ambient:0xbfe6a8, particle:0xcdf58a, particleShape:'flake' },
+    cave:  { fog:0x140f1e, ground:0x241c30, ground2:0x362a4a, rim:0x8a6fd6, ambient:0x9a86c9, particle:0xb89bff, particleShape:'mote' },
+    ruins: { fog:0x1a1018, ground:0x2a1a20, ground2:0x40232c, rim:0xd43c56, ambient:0xd68a9a, particle:0xff8fa0, particleShape:'ember' },
+    boss:  { fog:0x1c0b10, ground:0x2e0f16, ground2:0x4a1420, rim:0xff5c78, ambient:0xff9ab0, particle:0xffcf5c, particleShape:'ember' }
+  },
   init: function(){
     if(this.scene) return;
     var T = window.THREE;
@@ -5389,10 +5592,50 @@ var Battle3D = {
     var ground = new T.Mesh(new T.CircleGeometry(6,28), new T.MeshStandardMaterial({color:0x1c1330, roughness:0.92}));
     ground.rotation.x = -Math.PI/2;
     scene.add(ground);
+    var ringGeo = new T.RingGeometry(3.4,3.65,40);
+    var ringGlow = new T.Mesh(ringGeo, new T.MeshBasicMaterial({color:0x8a6fd6, transparent:true, opacity:0.35, side:T.DoubleSide}));
+    ringGlow.rotation.x = -Math.PI/2; ringGlow.position.y = 0.01;
+    scene.add(ringGlow);
     this.scene = scene; this.camera = camera; this.renderer = renderer;
+    this.ground = ground; this.ringGlow = ringGlow; this.hemi = hemi; this.key = key; this.rim = rim;
+    this.buildAmbientParticles();
     this.resize();
     var self = this;
     window.addEventListener('resize', function(){ self.resize(); });
+  },
+  buildAmbientParticles: function(){
+    var T = window.THREE;
+    var count = 34;
+    var geo = new T.BufferGeometry();
+    var positions = new Float32Array(count*3);
+    var speeds = [];
+    for(var i=0;i<count;i++){
+      positions[i*3]   = (Math.random()-0.5)*7;
+      positions[i*3+1] = Math.random()*3.2;
+      positions[i*3+2] = (Math.random()-0.5)*6;
+      speeds.push(0.12+Math.random()*0.22);
+    }
+    geo.setAttribute('position', new T.BufferAttribute(positions,3));
+    var mat = new T.PointsMaterial({color:0xcdf58a, size:0.05, transparent:true, opacity:0.65, depthWrite:false});
+    var pts = new T.Points(geo, mat);
+    this.scene.add(pts);
+    this.ambientParticles = pts;
+    this._particleSpeeds = speeds;
+  },
+  applyZoneEnvironment: function(zone){
+    if(!this.scene || this.currentZone===zone) return;
+    this.currentZone = zone;
+    var env = this.ZONE_ENV[zone] || this.ZONE_ENV.cave;
+    var T = window.THREE;
+    this.scene.fog.color = new T.Color(env.fog);
+    this.scene.fog.near = zone==='boss' ? 4 : 5;
+    this.scene.fog.far = zone==='boss' ? 11 : 13;
+    if(this.ground) this.ground.material.color = new T.Color(env.ground);
+    if(this.ringGlow) this.ringGlow.material.color = new T.Color(env.rim);
+    if(this.hemi) this.hemi.color = new T.Color(env.ambient);
+    if(this.rim) this.rim.color = new T.Color(env.rim);
+    if(this.ambientParticles) this.ambientParticles.material.color = new T.Color(env.particle);
+    var app = $('app'); if(app) app.style.setProperty('--zone-rim', '#'+new T.Color(env.rim).getHexString());
   },
   resize: function(){
     if(!this.renderer) return;
@@ -5421,6 +5664,7 @@ var Battle3D = {
     var self = this;
     Engine3D.ensureThree().then(function(){
       self.init();
+      self.applyZoneEnvironment(enemy.zone||'grass');
       var p = state.player;
       var pal = CLASS_PALETTE[p.cls] || CLASS_PALETTE.warrior;
       var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
@@ -5467,6 +5711,17 @@ var Battle3D = {
     }
     this.camera.position.set(0,1.9,4.3);
     this.camera.lookAt(0,1.0,-0.2);
+    if(this.ringGlow) this.ringGlow.rotation.z = t*0.08;
+    if(this.ambientParticles){
+      var posAttr = this.ambientParticles.geometry.attributes.position;
+      var speeds = this._particleSpeeds;
+      for(var i=0;i<speeds.length;i++){
+        var y = posAttr.getY(i) + speeds[i]*0.016;
+        if(y>3.2) y = 0;
+        posAttr.setY(i, y);
+      }
+      posAttr.needsUpdate = true;
+    }
     this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
   }
