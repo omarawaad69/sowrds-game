@@ -8,7 +8,7 @@
   - CACHE_VERSION only needs bumping if you want to force-clear old
     offline copies; it is NOT required for updates to reach players.
 */
-var CACHE_VERSION = 'sol-cache-v1';
+var CACHE_VERSION = 'sol-cache-v2';
 var CORE_ASSETS = [
   '/',
   '/index.html',
@@ -17,12 +17,26 @@ var CORE_ASSETS = [
   '/icon-512.png',
   '/icon-512-maskable.png'
 ];
+var OPTIONAL_ASSETS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/128/three.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+  'https://unpkg.com/three@0.128.0/build/three.min.js'
+];
 
 self.addEventListener('install', function(event){
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_VERSION).then(function(cache){
-      return cache.addAll(CORE_ASSETS).catch(function(){ /* ignore individual failures */ });
+      // core assets: cache individually too, so one bad entry can't take
+      // the rest down the way a single cache.addAll() would.
+      var corePromises = CORE_ASSETS.map(function(url){
+        return cache.add(url).catch(function(){ /* ignore individual failures */ });
+      });
+      // optional (three.js mirrors): best-effort, never blocks install
+      var optionalPromises = OPTIONAL_ASSETS.map(function(url){
+        return cache.add(url).catch(function(){ /* offline or blocked — fine, runtime fetch will retry later */ });
+      });
+      return Promise.all(corePromises.concat(optionalPromises));
     })
   );
 });
