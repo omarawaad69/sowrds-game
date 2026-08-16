@@ -341,6 +341,7 @@ input{font-family:inherit;}
   display:flex; align-items:flex-end; justify-content:space-between;
   padding:14px calc(14px + env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));
   pointer-events:none;
+  direction:ltr; /* movement stays visually left, action buttons visually right regardless of page rtl */
 }
 #controls > *{ pointer-events:auto; }
 .dpad-wrap{
@@ -1015,7 +1016,7 @@ input{font-family:inherit;}
   padding:6px 12px;border-radius:9px;font-size:11.5px;font-weight:700;
   background:var(--bg-dark);border:1px solid var(--crimson-dark);color:var(--crimson-bright);
 }
-#league-wrap{ flex:1; min-height:220px; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#league-wrap{ flex:1; min-height:120px; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 #league-canvas{ display:block; border-radius:6px; }
 .league-sweep-banner{
   position:absolute; top:14px; left:50%; transform:translateX(-50%);
@@ -1031,7 +1032,7 @@ input{font-family:inherit;}
 @keyframes sweepPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
 #league-controls{
   display:flex;align-items:center;justify-content:center;
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(0deg, var(--bg-panel-2), transparent);
   flex-shrink:0; z-index:6;
 }
@@ -1062,7 +1063,7 @@ input{font-family:inherit;}
 }
 @keyframes kfIn{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
 @keyframes kfOut{to{opacity:0;transform:translateX(12px);}}
-.lg-controls-row{ display:flex; align-items:flex-end; justify-content:center; gap:18px; width:100%; }
+.lg-controls-row{ display:flex; align-items:flex-end; justify-content:space-between; gap:18px; width:100%; direction:ltr; }
 .lg-ctrl-col{ display:flex; flex-direction:column; align-items:center; gap:5px; }
 #lg-special{
   width:64px;height:64px;border-radius:50%;flex-shrink:0;position:relative;
@@ -1458,14 +1459,12 @@ input{font-family:inherit;}
     <div id="league-controls">
       <div class="lg-controls-row">
         <div class="lg-ctrl-col">
-          <div class="dpad-wrap">
-            <div class="dpad">
-              <div class="empty"></div><button id="lg-up">▲</button><div class="empty"></div>
-              <button id="lg-left">◀</button><div class="empty"></div><button id="lg-right">▶</button>
-              <div class="empty"></div><button id="lg-down">▼</button><div class="empty"></div>
+          <div class="joy-wrap">
+            <div class="joystick-base" id="lg-joy-base">
+              <div class="joystick-stick" id="lg-joy-stick"></div>
             </div>
+            <div class="joy-hint">تحرك — الهجوم تلقائي بالقرب من عدو</div>
           </div>
-          <div class="joy-hint">تحرك — الهجوم تلقائي بالقرب من عدو</div>
         </div>
         <div class="lg-ctrl-col">
           <button id="lg-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
@@ -3836,6 +3835,54 @@ function mpCleanup(){
 var leagueCanvas, leagueCtx, leagueTile, leagueViewW, leagueViewH;
 var leagueKeys = { up:false, down:false, left:false, right:false };
 
+function setupLeagueJoystick(){
+  var base = $('lg-joy-base'), stick = $('lg-joy-stick');
+  if(!base || !stick || base._wired) return;
+  base._wired = true;
+  var maxR = 30, active = false;
+  function setFromPointer(clientX, clientY){
+    var rect = base.getBoundingClientRect();
+    var cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    var dx = clientX - cx, dy = clientY - cy;
+    var dist = Math.hypot(dx,dy);
+    if(dist > maxR){ dx = dx/dist*maxR; dy = dy/dist*maxR; dist = maxR; }
+    stick.style.transform = 'translate('+(dx-23)+'px,'+(dy-23)+'px)';
+    // translate the analog stick position into the same discrete
+    // up/down/left/right flags the rest of the game (and the online
+    // multiplayer sync) already reads, so nothing else needs to change
+    var deadzone = maxR*0.28;
+    if(dist > deadzone){
+      leagueKeys.left = dx < -deadzone*0.4;
+      leagueKeys.right = dx > deadzone*0.4;
+      leagueKeys.up = dy < -deadzone*0.4;
+      leagueKeys.down = dy > deadzone*0.4;
+    } else {
+      leagueKeys.up = leagueKeys.down = leagueKeys.left = leagueKeys.right = false;
+    }
+  }
+  function resetStick(){
+    stick.style.transform = 'translate(-50%,-50%)';
+    leagueKeys.up = leagueKeys.down = leagueKeys.left = leagueKeys.right = false;
+    active = false;
+  }
+  base.addEventListener('pointerdown', function(ev){
+    ev.preventDefault();
+    active = true;
+    base.setPointerCapture(ev.pointerId);
+    setFromPointer(ev.clientX, ev.clientY);
+  });
+  base.addEventListener('pointermove', function(ev){
+    if(!active) return;
+    ev.preventDefault();
+    setFromPointer(ev.clientX, ev.clientY);
+  });
+  base.addEventListener('pointerup', resetStick);
+  base.addEventListener('pointercancel', resetStick);
+  base.addEventListener('pointerleave', function(ev){
+    if(ev.pointerType==='mouse') resetStick();
+  });
+}
+
 function leagueStatsFor(cls, lvl){
   var c = CLASSES[cls];
   var L = lvl || 1;
@@ -3979,6 +4026,7 @@ function updateLeagueRosterHP(){
 }
 
 var LEAGUE_VIEW_UNITS_W = 26; // arena units visible across the screen width — lower = more zoomed in
+var LEAGUE_VIEW_UNITS_H = 15; // arena units visible across the screen height — keeps zoom sane on short/landscape screens
 function setupLeagueCanvas(){
   leagueCanvas = $('league-canvas');
   var wrap = $('league-wrap');
@@ -3997,7 +4045,9 @@ function setupLeagueCanvas(){
     return;
   }
   setupLeagueCanvas._retries = 0;
-  leagueTile = cw / LEAGUE_VIEW_UNITS_W; // fixed zoom: pixels per arena unit
+  var tileByW = cw / LEAGUE_VIEW_UNITS_W;      // pixels per arena unit, sized to fit width
+  var tileByH = ch / LEAGUE_VIEW_UNITS_H;      // pixels per arena unit, sized to fit height
+  leagueTile = clamp(Math.min(tileByW, tileByH), 6, 30); // whichever is tighter wins, so nothing balloons on wide/short landscape screens
   leagueViewW = cw / leagueTile;  // arena units visible horizontally
   leagueViewH = ch / leagueTile;  // arena units visible vertically
   leagueCanvas.style.width = cw+'px';
@@ -4338,7 +4388,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
   var stepSwing = u.ko ? 0 : Math.sin(u.bob*2)*(u.moving?1:0.15);
   ctx.translate(0, bobY);
-  var r = (u.controlled==='me' ? 5.4 : 4.5) * T * scale;
+  var r = (u.controlled==='me' ? 4.6 : 3.9) * T * scale;
 
   // ground shadow
   ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.9, r*0.3, 0, 0, Math.PI*2);
@@ -4831,7 +4881,7 @@ function wireEvents(){
     el.addEventListener('pointerleave', set(false));
     el.addEventListener('pointercancel', set(false));
   }
-  bindHold('lg-up','up'); bindHold('lg-down','down'); bindHold('lg-left','left'); bindHold('lg-right','right');
+  setupLeagueJoystick();
   window.addEventListener('keydown', function(ev){
     if(state.screen!=='league') return;
     if(ev.key==='ArrowUp'||ev.key==='w') leagueKeys.up=true;
