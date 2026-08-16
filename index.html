@@ -1945,12 +1945,22 @@ window.addEventListener('load', solLockViewport);
     }
     return null;
   }
+  // interactive controls (joystick, dpad, any button, ability buttons) fully
+  // handle their own pointer/touch events already, with their own
+  // touch-action:none — this global gesture-killer must never touch those,
+  // only areas nothing else is managing (blank background, plain text/lists).
+  function isOwnedByAControl(el){
+    return !!(el && el.closest && el.closest(
+      'button, .joystick-base, .joystick-stick, .dpad, .lg-round-ability, .lg-round-special, [role="slider"]'
+    ));
+  }
   document.addEventListener('touchstart', function(e){
     if(e.touches.length!==1) return;
     startY = e.touches[0].clientY;
   }, {passive:true});
   document.addEventListener('touchmove', function(e){
     if(e.touches.length!==1) return;
+    if(isOwnedByAControl(e.target)) return;
     var y = e.touches[0].clientY;
     var deltaY = y - startY;
     var scrollEl = findScrollable(e.target);
@@ -5033,7 +5043,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
   var stepSwing = u.ko ? 0 : Math.sin(u.bob*2)*(u.moving?1:0.15);
   ctx.translate(0, bobY);
-  var r = (u.controlled==='me' ? 4.15 : 3.9) * T * scale;
+  var r = (u.controlled==='me' ? 3.65 : 3.9) * T * scale;
 
   if(!use3D){
   // ground shadow
@@ -5620,17 +5630,37 @@ function wireEvents(){
    ============================================================ */
 var Engine3D = (function(){
   var loadingPromise = null;
+  var CDN_SOURCES = [
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://unpkg.com/three@0.128.0/build/three.min.js'
+  ];
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function(){ resolve(); };
+      s.onerror = function(){ reject(new Error('failed: '+src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function tryChain(i){
+    if(window.THREE) return Promise.resolve();
+    if(i>=CDN_SOURCES.length) return Promise.reject(new Error('all three.js sources failed'));
+    return loadScript(CDN_SOURCES[i]).catch(function(){ return tryChain(i+1); });
+  }
   function ensureThree(){
     if(window.THREE) return Promise.resolve();
     if(loadingPromise) return loadingPromise;
-    loadingPromise = new Promise(function(resolve, reject){
-      try{
-        var s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/128/three.min.js';
-        s.onload = function(){ resolve(); };
-        s.onerror = function(){ reject(new Error('three.js failed to load')); };
-        document.head.appendChild(s);
-      }catch(err){ reject(err); }
+    loadingPromise = tryChain(0).catch(function(err){
+      // every mirror failed — almost always means no internet connection at
+      // all right now. Let the player know once, so a flat 2D character
+      // doesn't look like a bug when it's actually just "you're offline".
+      if(!window._sol3dFailToastShown){
+        window._sol3dFailToastShown = true;
+        try{ toast('⚠️ تعذر تحميل الرسومات ثلاثية الأبعاد (يحتاج إنترنت أول مرة) — اللعبة شغالة بشكل عادي بدونها'); }catch(e){}
+      }
+      throw err;
     });
     return loadingPromise;
   }
@@ -6399,7 +6429,7 @@ var Battle3D = {
 var League3D = {
   scene:null, camera:null, renderer:null, sun:null,
   models:{}, zoneMeshes:{}, raf:null, ready:false,
-  HUMANOID_SCALE: 4.2,
+  HUMANOID_SCALE: 3.6,
   teamColor: function(team){ return team==='blue' ? 0x3fe0d0 : 0xd43c56; },
 
   init: function(){
@@ -6496,6 +6526,8 @@ var League3D = {
     });
   },
 
+  scaleFor: function(u){ return u.controlled==='me' ? this.HUMANOID_SCALE*0.84 : this.HUMANOID_SCALE; },
+
   ensureModel: function(u){
     var key = u.team+u.idx;
     if(this.models[key]) return this.models[key];
@@ -6503,8 +6535,9 @@ var League3D = {
     var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
     var pal2 = {primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:this.teamColor(u.team)};
     var model = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[u.cls], banner:this.teamColor(u.team)});
-    model.scale.setScalar(this.HUMANOID_SCALE);
-    model.userData._baseScale = this.HUMANOID_SCALE;
+    var s = this.scaleFor(u);
+    model.scale.setScalar(s);
+    model.userData._baseScale = s;
     model.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
     this.scene.add(model);
     this.models[key] = model;
@@ -6526,7 +6559,7 @@ var League3D = {
       m.visible = visible;
       if(visible){
         Engine3D.animateHumanoidIdle(m, t + (u.team==='red'?37:0), u.moving);
-        m.scale.setScalar(self.HUMANOID_SCALE); // animateHumanoidIdle only touches child parts, but stay defensive
+        m.scale.setScalar(self.scaleFor(u)); // animateHumanoidIdle only touches child parts, but stay defensive
       }
       if(u.flash>0 && !m.userData._flashedRecently){
         m.userData._flashedRecently = true;
@@ -6669,4 +6702,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-                                                </html>
+  </html>
