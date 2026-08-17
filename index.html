@@ -2805,6 +2805,10 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.add('hidden'); });
   $(id).classList.remove('hidden');
   state.screen = id.replace('screen-','');
+  if(id==='screen-title' && window._solUpdateReady){
+    window._solUpdateReady = false;
+    window.location.reload();
+  }
 }
 
 /* ============================================================
@@ -6206,34 +6210,25 @@ var Map3D = {
       $('map-canvas').classList.add('faded-2d');
       var glyph = $('player-glyph'); if(glyph) glyph.classList.add('faded-2d');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(err){ console.error('Map3D failed to start:', err); /* classic 2D map stays fully playable */ });
+    }).catch(function(){ /* offline or blocked — classic 2D map stays fully playable */ });
   },
   tick: function(ts){
     var self = this;
     if(state.screen!=='game' || !this.renderer){ this.raf=null; return; }
-    try{
-      if(!this._lastTs) this._lastTs = ts;
-      var dt = Math.min(0.05,(ts-this._lastTs)/1000);
-      this._lastTs = ts;
-      this.syncPlayerTarget();
-      this.curX += (this.targetX-this.curX)*Math.min(1,dt*10);
-      this.curZ += (this.targetZ-this.curZ)*Math.min(1,dt*10);
-      if(this.player){
-        this.player.position.set(this.curX,0,this.curZ);
-        var isMoving = Math.hypot(this.targetX-this.curX, this.targetZ-this.curZ) > 0.05;
-        Engine3D.animateHumanoidIdle(this.player, ts/1000, isMoving);
-      }
-      this.camera.position.set(this.curX, 5.6, this.curZ+4.4);
-      this.camera.lookAt(this.curX, 0.6, this.curZ);
-      this.renderer.render(this.scene, this.camera);
-    }catch(err){
-      console.error('Map3D render frame failed — falling back to 2D map:', err);
-      var c = $('map3d-canvas'); if(c) c.classList.remove('ready');
-      var mc = $('map-canvas'); if(mc) mc.classList.remove('faded-2d');
-      var pg = $('player-glyph'); if(pg) pg.classList.remove('faded-2d');
-      this.raf = null;
-      return;
+    if(!this._lastTs) this._lastTs = ts;
+    var dt = Math.min(0.05,(ts-this._lastTs)/1000);
+    this._lastTs = ts;
+    this.syncPlayerTarget();
+    this.curX += (this.targetX-this.curX)*Math.min(1,dt*10);
+    this.curZ += (this.targetZ-this.curZ)*Math.min(1,dt*10);
+    if(this.player){
+      this.player.position.set(this.curX,0,this.curZ);
+      var isMoving = Math.hypot(this.targetX-this.curX, this.targetZ-this.curZ) > 0.05;
+      Engine3D.animateHumanoidIdle(this.player, ts/1000, isMoving);
     }
+    this.camera.position.set(this.curX, 5.6, this.curZ+4.4);
+    this.camera.lookAt(this.curX, 0.6, this.curZ);
+    this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
   }
 };
@@ -6369,7 +6364,7 @@ var Battle3D = {
       $('enemy-sprite').classList.add('faded-2d');
       $('hero-sprite').classList.add('faded-2d');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(err){ console.error('Battle3D failed to start:', err); /* classic 2D battle stays fully playable */ });
+    }).catch(function(){ /* offline or blocked — classic 2D battle stays fully playable */ });
   },
   heroAttack: function(cls){ if(this.player){ Engine3D.triggerLunge(this.player, cls==='heavy-attacking'?0.55:0.32); Engine3D.triggerSwing(this.player); } },
   heroHurt: function(){ if(this.player) Engine3D.triggerFlash(this.player, 0xff5c78); },
@@ -6380,42 +6375,33 @@ var Battle3D = {
   tick: function(ts){
     var self = this;
     if(state.screen!=='battle' || !this.renderer){ this.raf=null; return; }
-    try{
-      var t = ts/1000;
-      if(this.player && typeof arena !== 'undefined'){
-        this.player.position.x = (arena.heroX-0.5)*4.4;
-        this.player.position.z = (arena.heroY-0.5)*3.2;
-        this.player.rotation.y = 0.35;
-        Engine3D.animateHumanoidIdle(this.player, t, arena.joyActive);
-      }
-      if(this.enemy && typeof arena !== 'undefined'){
-        this.enemy.position.x = (arena.enemyX-0.5)*4.4;
-        this.enemy.position.z = (arena.enemyY-0.5)*3.2;
-        this.enemy.rotation.y = -0.5;
-        Engine3D.animateCreatureIdle(this.enemy, t);
-      }
-      this.camera.position.set(0,1.9,4.3);
-      this.camera.lookAt(0,1.0,-0.2);
-      if(this.ringGlow) this.ringGlow.rotation.z = t*0.08;
-      if(this.ambientParticles){
-        var posAttr = this.ambientParticles.geometry.attributes.position;
-        var speeds = this._particleSpeeds;
-        for(var i=0;i<speeds.length;i++){
-          var y = posAttr.getY(i) + speeds[i]*0.016;
-          if(y>3.2) y = 0;
-          posAttr.setY(i, y);
-        }
-        posAttr.needsUpdate = true;
-      }
-      this.renderer.render(this.scene, this.camera);
-    }catch(err){
-      console.error('Battle3D render frame failed — falling back to 2D battle:', err);
-      var c = $('battle3d-canvas'); if(c) c.classList.remove('ready');
-      var es = $('enemy-sprite'); if(es) es.classList.remove('faded-2d');
-      var hs = $('hero-sprite'); if(hs) hs.classList.remove('faded-2d');
-      this.raf = null;
-      return;
+    var t = ts/1000;
+    if(this.player && typeof arena !== 'undefined'){
+      this.player.position.x = (arena.heroX-0.5)*4.4;
+      this.player.position.z = (arena.heroY-0.5)*3.2;
+      this.player.rotation.y = 0.35;
+      Engine3D.animateHumanoidIdle(this.player, t, arena.joyActive);
     }
+    if(this.enemy && typeof arena !== 'undefined'){
+      this.enemy.position.x = (arena.enemyX-0.5)*4.4;
+      this.enemy.position.z = (arena.enemyY-0.5)*3.2;
+      this.enemy.rotation.y = -0.5;
+      Engine3D.animateCreatureIdle(this.enemy, t);
+    }
+    this.camera.position.set(0,1.9,4.3);
+    this.camera.lookAt(0,1.0,-0.2);
+    if(this.ringGlow) this.ringGlow.rotation.z = t*0.08;
+    if(this.ambientParticles){
+      var posAttr = this.ambientParticles.geometry.attributes.position;
+      var speeds = this._particleSpeeds;
+      for(var i=0;i<speeds.length;i++){
+        var y = posAttr.getY(i) + speeds[i]*0.016;
+        if(y>3.2) y = 0;
+        posAttr.setY(i, y);
+      }
+      posAttr.needsUpdate = true;
+    }
+    this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
   }
 };
@@ -6549,23 +6535,17 @@ var League3D = {
   ensureModel: function(u){
     var key = u.team+u.idx;
     if(this.models[key]) return this.models[key];
-    try{
-      var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
-      var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
-      var pal2 = {primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:this.teamColor(u.team)};
-      var model = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[u.cls], banner:this.teamColor(u.team)});
-      var s = this.scaleFor(u);
-      model.scale.setScalar(s);
-      model.userData._baseScale = s;
-      model.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
-      this.scene.add(model);
-      this.models[key] = model;
-      return model;
-    }catch(err){
-      console.error('League3D.ensureModel failed for unit', key, err);
-      this.models[key] = null;
-      return null;
-    }
+    var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
+    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+    var pal2 = {primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:this.teamColor(u.team)};
+    var model = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[u.cls], banner:this.teamColor(u.team)});
+    var s = this.scaleFor(u);
+    model.scale.setScalar(s);
+    model.userData._baseScale = s;
+    model.traverse(function(o){ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
+    this.scene.add(model);
+    this.models[key] = model;
+    return model;
   },
 
   syncUnits: function(){
@@ -6577,7 +6557,6 @@ var League3D = {
       var key = u.team+u.idx;
       seen[key] = true;
       var m = self.ensureModel(u);
-      if(!m) return; // this unit's model failed to build once — skip it, rest of the scene keeps rendering
       m.position.set(u.x, 0, u.y);
       m.rotation.y = u.facing<0 ? Math.PI/2 : -Math.PI/2;
       var visible = !u.ko;
@@ -6593,7 +6572,7 @@ var League3D = {
       }
     });
     Object.keys(this.models).forEach(function(key){
-      if(!seen[key]){ if(self.models[key]) self.scene.remove(self.models[key]); delete self.models[key]; }
+      if(!seen[key]){ self.scene.remove(self.models[key]); delete self.models[key]; }
     });
   },
 
@@ -6649,12 +6628,7 @@ var League3D = {
       self.ready = true;
       var c = $('league-canvas-3d'); if(c) c.classList.add('ready');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(err){
-      // offline, blocked CDN, or an unexpected build error — the flat 2D arena
-      // stays fully playable either way, but log the real reason so it's
-      // diagnosable instead of just "3D doesn't work" with no clue why.
-      console.error('League3D failed to start:', err);
-    });
+    }).catch(function(){ /* offline or unsupported — the flat 2D arena stays fully playable */ });
   },
 
   stop: function(){
@@ -6671,23 +6645,11 @@ var League3D = {
   tick: function(ts){
     var self = this;
     if(state.screen!=='league' || !league || league.ended || !this.renderer){ this.raf = null; return; }
-    try{
-      this.resize();
-      this.syncUnits();
-      this.syncZones();
-      this.updateCamera();
-      this.renderer.render(this.scene, this.camera);
-    }catch(err){
-      // a single bad frame must never leave the arena permanently blank: log it for
-      // diagnosis, drop back to the flat 2D renderer (which is fully independent of
-      // this object), and stop the 3D loop cleanly instead of retrying a frame that
-      // will keep throwing.
-      console.error('League3D render frame failed — falling back to 2D arena:', err);
-      this.ready = false;
-      var c = $('league-canvas-3d'); if(c) c.classList.remove('ready');
-      this.raf = null;
-      return;
-    }
+    this.resize();
+    this.syncUnits();
+    this.syncZones();
+    this.updateCamera();
+    this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(function(t2){ self.tick(t2); });
   }
 };
@@ -6722,8 +6684,14 @@ document.addEventListener('DOMContentLoaded', init);
    SERVICE WORKER — enables offline play + auto-updates.
    Network-first strategy means any update pushed to GitHub ->
    Cloudflare Pages reaches every open of the app automatically,
-   no reinstall needed. If a new version activates while the app
-   is already open, we reload once to pick it up seamlessly.
+   no reinstall needed. IMPORTANT: we never force-reload the page
+   the instant a new version activates — that used to be able to
+   yank the page out from under the player at literally any
+   moment (mid-battle, mid-scroll, mid-joystick-drag), which is
+   indistinguishable from "the app randomly refreshes". Instead we
+   just remember that an update is ready and let showScreen()
+   apply it the next time the player is safely back at the title
+   screen, where nothing is lost.
    ============================================================ */
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
@@ -6733,8 +6701,11 @@ if('serviceWorker' in navigator){
         if(!newWorker) return;
         newWorker.addEventListener('statechange', function(){
           if(newWorker.state === 'activated' && navigator.serviceWorker.controller){
-            // a fresher version just took over — refresh to use it
-            window.location.reload();
+            if(typeof state !== 'undefined' && state.screen === 'title'){
+              window.location.reload();
+            } else {
+              window._solUpdateReady = true;
+            }
           }
         });
       });
@@ -6744,4 +6715,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-                                                </html>
+  </html>
