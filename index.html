@@ -4574,7 +4574,7 @@ function launchLeagueScreen(){
         // additive 3D layer for the 5×5 arena — purely visual, never touches
         // league state/combat logic; if three.js fails to load (offline etc.)
         // the flat 2D arena above keeps working exactly as before.
-        if(window.League3D) League3D.start();
+        if(League3D) League3D.start();
       }catch(err){
         console.error('League match failed to start:', err);
         toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
@@ -5041,7 +5041,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   // when League3D is up, the actual character body/limbs/weapon/cape are rendered by
   // the WebGL layer underneath — this function then only keeps the still-useful flat
   // HUD bits (nameplate, HP bar, KO countdown) so they stay crisp and legible on top.
-  var use3D = window.League3D && League3D.ready;
+  var use3D = League3D && League3D.ready;
   ctx.save();
   ctx.translate(u.x*T, u.y*T);
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
@@ -5269,7 +5269,7 @@ function leagueDraw(){
   // (all still genuinely useful as a crisp top-down HUD) but skips the flat background
   // fill, the ground grid, and the old flat character sprites — the 3D scene supplies
   // the ground and the actual character models underneath this canvas instead.
-  var use3D = window.League3D && League3D.ready;
+  var use3D = League3D && League3D.ready;
 
   // background is drawn in flat screen space first (no camera offset) so it
   // always fully covers the canvas regardless of where the camera is panned
@@ -5377,7 +5377,7 @@ function closeLeagueResultAndContinue(){
 function exitLeagueToTitle(){
   mpCleanup();
   league = null;
-  if(window.League3D) League3D.stop();
+  if(League3D) League3D.stop();
   showScreen('screen-title');
   refreshTitleButtons();
 }
@@ -6736,4 +6736,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-                                                                                              </html>
+  </html>
