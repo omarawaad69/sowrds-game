@@ -6210,7 +6210,14 @@ var Map3D = {
       $('map-canvas').classList.add('faded-2d');
       var glyph = $('player-glyph'); if(glyph) glyph.classList.add('faded-2d');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(){ /* offline or blocked — classic 2D map stays fully playable */ });
+    }).catch(function(err){
+      console.error('Map3D failed to start:', err);
+      if(!window._sol3dErrorToastShown){
+        window._sol3dErrorToastShown = true;
+        var msg = (err && err.message) ? err.message : String(err);
+        try{ toast('⚠️ فشل تحميل الرسومات 3D: '+msg.slice(0,80)); }catch(e){}
+      }
+    });
   },
   tick: function(ts){
     var self = this;
@@ -6364,7 +6371,14 @@ var Battle3D = {
       $('enemy-sprite').classList.add('faded-2d');
       $('hero-sprite').classList.add('faded-2d');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(){ /* offline or blocked — classic 2D battle stays fully playable */ });
+    }).catch(function(err){
+      console.error('Battle3D failed to start:', err);
+      if(!window._sol3dErrorToastShown){
+        window._sol3dErrorToastShown = true;
+        var msg = (err && err.message) ? err.message : String(err);
+        try{ toast('⚠️ فشل تحميل الرسومات 3D: '+msg.slice(0,80)); }catch(e){}
+      }
+    });
   },
   heroAttack: function(cls){ if(this.player){ Engine3D.triggerLunge(this.player, cls==='heavy-attacking'?0.55:0.32); Engine3D.triggerSwing(this.player); } },
   heroHurt: function(){ if(this.player) Engine3D.triggerFlash(this.player, 0xff5c78); },
@@ -6628,7 +6642,14 @@ var League3D = {
       self.ready = true;
       var c = $('league-canvas-3d'); if(c) c.classList.add('ready');
       if(!self.raf) self.raf = requestAnimationFrame(function(ts){ self.tick(ts); });
-    }).catch(function(){ /* offline or unsupported — the flat 2D arena stays fully playable */ });
+    }).catch(function(err){
+      console.error('League3D failed to start:', err);
+      if(!window._sol3dErrorToastShown){
+        window._sol3dErrorToastShown = true;
+        var msg = (err && err.message) ? err.message : String(err);
+        try{ toast('⚠️ فشل تحميل الرسومات 3D: '+msg.slice(0,80)); }catch(e){}
+      }
+    });
   },
 
   stop: function(){
@@ -6715,4 +6736,4 @@ if('serviceWorker' in navigator){
 })();
 </script>
 </body>
-  </html>
+                                                                                              </html>
