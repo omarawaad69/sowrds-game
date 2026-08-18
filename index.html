@@ -1341,6 +1341,39 @@ input{font-family:inherit;}
 #lg-ability.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
 #lg-ability .cd-num{ position:absolute; font-size:15px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
 
+#lg-ultimate{
+  width:58px;height:58px;border-radius:50%;flex-shrink:0;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 35% 30%, #3a2450, #14101f 70%);
+  border:2px solid #5b4a99; box-shadow:0 4px 14px rgba(0,0,0,0.5);
+  font-size:22px; display:flex; align-items:center; justify-content:center; color:#fff;
+  transition:transform .12s;
+}
+#lg-ultimate:disabled{ opacity:0.65; }
+#lg-ultimate .lg-ult-fill{
+  position:absolute; left:0; right:0; bottom:0; height:0%;
+  background:linear-gradient(0deg, #a86bff, #ff5c78);
+  opacity:0.55; transition:height .2s linear;
+}
+#lg-ultimate span{ position:relative; z-index:1; filter:drop-shadow(0 2px 3px rgba(0,0,0,0.7)); }
+#lg-ultimate.ready{
+  border-color:#ffe08a; animation:lgUltReady 1s ease-in-out infinite;
+}
+#lg-ultimate.ready:active{ transform:scale(0.9); }
+@keyframes lgUltReady{ 0%,100%{ box-shadow:0 4px 14px rgba(0,0,0,0.5), 0 0 0 rgba(255,224,138,0.6); } 50%{ box-shadow:0 4px 14px rgba(0,0,0,0.5), 0 0 18px rgba(255,224,138,0.85); } }
+
+#league-ult-banner{
+  position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+#league-ult-banner span{
+  font-size:22px; font-weight:900; color:var(--gold-bright); letter-spacing:1px;
+  text-shadow:0 0 12px var(--ult-color, #ffe08a), 0 4px 10px rgba(0,0,0,0.85);
+  background:rgba(8,5,15,0.6); padding:10px 24px; border-radius:14px;
+  border:1px solid var(--ult-color, var(--gold-dim));
+}
+#league-ult-banner.play span{ animation:lgUltBannerIn .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes lgUltBannerIn{0%{opacity:0;transform:scale(0.4) translateY(10px);}60%{opacity:1;transform:scale(1.08);}100%{opacity:1;transform:scale(1);}}
+
 /* ---- first-run explainer banner: who you are + how the mode works ---- */
 .league-tip{
   position:absolute; top:calc(64px + env(safe-area-inset-top,0px)); left:10px; right:10px; z-index:21;
@@ -1774,11 +1807,16 @@ input{font-family:inherit;}
           </div>
         </div>
         <div class="lg-abilities-col">
+          <button id="lg-ultimate" class="lg-round-ultimate" title="القدرة الخارقة" disabled>
+            <div class="lg-ult-fill" id="lg-ultimate-fill"></div>
+            <span id="lg-ultimate-icon">🌋</span>
+          </button>
           <button id="lg-ability" class="lg-round-ability" title="قدرة سريعة"><span id="lg-ability-icon">💫</span><span class="cd-num hidden" id="lg-ability-cd"></span></button>
           <button id="lg-special" class="lg-round-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
         </div>
       </div>
     </div>
+    <div id="league-ult-banner" class="hidden"><span id="league-ult-banner-text"></span></div>
   </div>
 
   <div id="mp-wait-overlay" class="mp-wait-overlay hidden">
@@ -4266,6 +4304,16 @@ function onMpRoomMessage(evt){
     if(!league.isHost) return;
     var au = league.units.filter(function(x){ return x.peerId===data.from; })[0];
     if(au && !au.ko && au.abilityCd<=0) leagueResolveAbility(au);
+  } else if(data.type==='ultimateRequest'){
+    if(!league.isHost) return;
+    var uu = league.units.filter(function(x){ return x.peerId===data.from; })[0];
+    if(uu && !uu.ko && (uu.ultCharge||0)>=100) leagueResolveUltimate(uu);
+  } else if(data.type==='ultimateFx'){
+    if(league.isHost) return;
+    var au2 = findLeagueUnit(data.aTeam, data.aIdx);
+    if(!au2) return;
+    league.fx.push({ type:'nova', x:au2.x, y:au2.y, x0:au2.x, y0:au2.y, life:0.6, born:0, color:data.color, big:true });
+    leagueShowUltBanner(data.banner, data.color);
   } else if(data.type==='snapshot'){
     if(league.isHost) return; // host never applies snapshots — it IS the authority
     league.time = data.time;
@@ -4296,6 +4344,7 @@ function onMpRoomMessage(evt){
     var a2 = findLeagueUnit(data.aTeam, data.aIdx), t2 = findLeagueUnit(data.tTeam, data.tIdx);
     if(!a2 || !t2) return;
     if(data.kind==='slash') league.fx.push({ type:'slash', x:t2.x, y:t2.y, life:0.22, born:0, color: a2.team==='blue'?'#3fe0d0':'#d43c56' });
+    else if(data.kind==='arrow') league.fx.push({ type:'arrow', x0:a2.x, y0:a2.y, x:t2.x, y:t2.y, life:0.22, born:0, color:'#ffd45e' });
     else league.fx.push({ type:'bolt', x0:a2.x, y0:a2.y, x:t2.x, y:t2.y, life:0.18, born:0, color: a2.cls==='mage'?'#a86bff':'#ffd45e' });
   } else if(data.type==='specialFx'){
     if(league.isHost) return;
@@ -4444,7 +4493,7 @@ function makeLeagueUnit(team, idx, cls, lvl){
     bob: Math.random()*Math.PI*2,
     flash: 0, moving:false,
     specialCd: 0, specialReady: false,
-    abilityCd: 0,
+    abilityCd: 0, ultCharge: 0,
     /* controlled: 'me' = this device's player, 'net' = a real remote player
        (simulated locally only on the host, mirrored via snapshots on peers),
        'ai' = bot. peerId links a 'net' slot to its network connection id. */
@@ -4560,7 +4609,7 @@ function showLeagueShowcase(){
 function launchLeagueScreen(){
   try{
     renderLeagueRoster();
-    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn(); updateLeagueUltimateBtn();
     showScreen('screen-league');
     var tip = $('league-tip');
     if(tip){
@@ -4571,10 +4620,10 @@ function launchLeagueScreen(){
         setupLeagueCanvas();
         league.lastTs = performance.now();
         requestAnimationFrame(leagueLoop);
-        // additive 3D layer for the 5×5 arena — purely visual, never touches
-        // league state/combat logic; if three.js fails to load (offline etc.)
-        // the flat 2D arena above keeps working exactly as before.
-        if(League3D) League3D.start();
+        // 3D layer disabled for the 5×5 arena by request — using the flat 2D
+        // arena renderer only. (League3D code stays intact below in case it's
+        // wanted again later — just re-enable the line below to turn it back on.)
+        // if(League3D) League3D.start();
       }catch(err){
         console.error('League match failed to start:', err);
         toast('تعذر بدء معركة الدوري — حاول مرة أخرى');
@@ -4683,7 +4732,7 @@ function leagueLoop(ts){
     leagueUpdateFx(dt);
     leagueUpdateCamera(dt);
     updateLeagueRosterHP();
-    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn(); updateLeagueUltimateBtn();
     leagueDraw();
     mpTickSendInput(dt);
   } else {
@@ -4694,7 +4743,7 @@ function leagueLoop(ts){
     leagueUpdateFx(dt);
     leagueUpdateCamera(dt);
     updateLeagueRosterHP();
-    updateLeagueSpecialBtn(); updateLeagueAbilityBtn();
+    updateLeagueSpecialBtn(); updateLeagueAbilityBtn(); updateLeagueUltimateBtn();
     leagueDraw();
     if(league.online && league.isHost) mpTickBroadcastSnapshot(dt);
   }
@@ -4797,10 +4846,11 @@ function leagueDealDamage(attacker, target, mult, label){
   if(!target || target.ko) return;
   var isMag = attacker.cls==='mage';
   var raw = (isMag ? attacker.mag*1.6 : attacker.atk*1.45) * (mult||1);
-  var def = target.def * (target.controlled==='me' ? 0.85 : 0.55); // player's armor counts for a bit more
-  var dmg = Math.max(2, Math.round(raw - def));
+  var def = target.def * (target.controlled==='me' ? 1.05 : 0.72); // player's armor counts for a bit more, and overall damage is toned down a notch for longer, more tactical fights
+  var dmg = Math.max(2, Math.round((raw - def) * 0.82));
   target.hp -= dmg;
   target.flash = 0.18;
+  attacker.ultCharge = clamp((attacker.ultCharge||0) + (mult>=2.5?22:mult>=1.3?13:8), 0, 100);
   league.floaters.push({ x:target.x, y:target.y-4, life:0.9, born:0, txt:'-'+dmg, crit:mult>1 });
   if(target.controlled==='me' || attacker.controlled==='me') league.shake = Math.min(6, league.shake+2.2);
   var isKo = false;
@@ -4856,12 +4906,14 @@ function myLeagueUnit(){
 function leagueSpawnAttackFx(attacker, target){
   if(attacker.cls==='warrior'){
     league.fx.push({ type:'slash', x:target.x, y:target.y, life:0.22, born:0, color: attacker.team==='blue'?'#3fe0d0':'#d43c56' });
+  } else if(attacker.cls==='archer'){
+    league.fx.push({ type:'arrow', x0:attacker.x, y0:attacker.y, x:target.x, y:target.y, life:0.22, born:0, color:'#ffd45e' });
   } else {
     league.fx.push({ type:'bolt', x0:attacker.x, y0:attacker.y, x:target.x, y:target.y, life:0.18, born:0,
       color: attacker.cls==='mage' ? '#a86bff' : '#ffd45e' });
   }
   if(league.online && league.isHost){
-    mpBroadcast({ type:'fxEvent', kind: attacker.cls==='warrior'?'slash':'bolt', aTeam:attacker.team, aIdx:attacker.idx,
+    mpBroadcast({ type:'fxEvent', kind: attacker.cls==='warrior'?'slash':(attacker.cls==='archer'?'arrow':'bolt'), aTeam:attacker.team, aIdx:attacker.idx,
       tTeam:target.team, tIdx:target.idx });
   }
 }
@@ -4966,6 +5018,70 @@ function updateLeagueAbilityBtn(){
   }
 }
 
+/* ---- ultimate: charged through combat (like the solo battle's signature move),
+   guaranteed to land, hits every enemy in a wide radius with a big flashy banner ---- */
+var LEAGUE_ULTIMATES = {
+  warrior:{ name:'غضب التيتان', banner:'غضب التيتان!!', icon:'🌋', color:'#ff5c78', mult:3.2, radius:16 },
+  mage:{ name:'نيزك الفناء', banner:'نيزك الفناء!!', icon:'☄️', color:'#8a6fd6', mult:2.6, radius:18 },
+  archer:{ name:'وابل السهام القدرية', banner:'وابل السهام القدرية!!', icon:'🏹', color:'#3fe0d0', mult:2.0, radius:20 }
+};
+
+function useLeagueUltimate(){
+  if(!league || league.ended) return;
+  var p = myLeagueUnit();
+  if(!p || p.ko || (p.ultCharge||0)<100) return;
+  if(league.online && !league.isHost){
+    p.ultCharge = 0; // responsive local reset while we wait for the host
+    mpSend({ type:'ultimateRequest' });
+    return;
+  }
+  leagueResolveUltimate(p);
+}
+
+function leagueResolveUltimate(p){
+  if((p.ultCharge||0)<100 && p.controlled!=='me') return; // host trusts its own bots' gauge; guards against stale/duplicate net requests
+  var ult = LEAGUE_ULTIMATES[p.cls];
+  p.ultCharge = 0;
+  league.shake = Math.min(10, league.shake+4.5);
+  league.fx.push({ type:'nova', x:p.x, y:p.y, x0:p.x, y0:p.y, life:0.6, born:0, color:ult.color, big:true });
+  leagueShowUltBanner(ult.banner, ult.color);
+  var hitAny = false;
+  league.units.forEach(function(u){
+    if(u.ko || u.team===p.team) return;
+    if(Math.hypot(u.x-p.x, u.y-p.y) <= ult.radius){
+      leagueDealDamage(p, u, ult.mult);
+      hitAny = true;
+    }
+  });
+  if(!hitAny && p.controlled==='me') toast('لا يوجد أعداء بالقرب — لكن القدرة استُهلكت!');
+  if(league.online && league.isHost) mpBroadcast({ type:'ultimateFx', aTeam:p.team, aIdx:p.idx, banner:ult.banner, color:ult.color });
+}
+
+function leagueShowUltBanner(text, color){
+  var el = $('league-ult-banner');
+  if(!el) return;
+  $('league-ult-banner-text').textContent = text;
+  el.style.setProperty('--ult-color', color);
+  el.classList.remove('hidden');
+  el.classList.remove('play'); void el.offsetWidth; el.classList.add('play');
+  setTimeout(function(){ el.classList.add('hidden'); }, 1300);
+}
+
+function updateLeagueUltimateBtn(){
+  if(!league) return;
+  var btn = $('lg-ultimate'), fillEl = $('lg-ultimate-fill'), icon = $('lg-ultimate-icon');
+  if(!btn) return;
+  var p = myLeagueUnit();
+  if(!p) return;
+  var ult = LEAGUE_ULTIMATES[p.cls];
+  if(icon) icon.textContent = ult.icon;
+  var pct = clamp(p.ultCharge||0, 0, 100);
+  var ready = pct>=100;
+  if(fillEl) fillEl.style.height = pct+'%';
+  btn.classList.toggle('ready', ready);
+  btn.disabled = !ready;
+}
+
 function leagueUpdateCapture(dt){
   var rate = 15; // capture points per second per net unit advantage
   league.zones.forEach(function(zone){
@@ -5035,121 +5151,70 @@ function leagueUpdateTimer(dt){
   $('league-timer').textContent = m+':'+(s<10?'0':'')+s;
 }
 
+var leagueHeroSpriteCache = {};
+function getLeagueHeroSprite(cls, rarity){
+  var key = cls+'|'+(rarity||'epic');
+  var entry = leagueHeroSpriteCache[key];
+  if(entry) return entry.loaded ? entry.img : null;
+  var svg = heroSVG(cls, rarity||'epic');
+  var img = new Image();
+  entry = { img:img, loaded:false };
+  leagueHeroSpriteCache[key] = entry;
+  try{
+    img.onload = function(){ entry.loaded = true; };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  }catch(err){ /* if encoding ever fails, the hand-drawn fallback below keeps rendering */ }
+  return null;
+}
+
 function leagueDrawUnitBody(ctx, u, T, scale){
   var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
   var teamGlow = u.team==='blue' ? '#3fe0d0' : '#d43c56';
-  // when League3D is up, the actual character body/limbs/weapon/cape are rendered by
-  // the WebGL layer underneath — this function then only keeps the still-useful flat
-  // HUD bits (nameplate, HP bar, KO countdown) so they stay crisp and legible on top.
-  var use3D = League3D && League3D.ready;
   ctx.save();
   ctx.translate(u.x*T, u.y*T);
-  var bobY = u.ko ? 0 : Math.sin(u.bob)*1.7*scale;
-  var stepSwing = u.ko ? 0 : Math.sin(u.bob*2)*(u.moving?1:0.15);
+  var bobY = u.ko ? 0 : Math.sin(u.bob)*1.4*scale;
   ctx.translate(0, bobY);
-  var r = (u.controlled==='me' ? 3.65 : 3.9) * T * scale;
+  // a notch smaller than before so more of the battlefield reads at once
+  var r = (u.controlled==='me' ? 2.9 : 3.05) * T * scale;
 
-  if(!use3D){
   // ground shadow
-  ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.9, r*0.3, 0, 0, Math.PI*2);
+  ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.85, r*0.28, 0, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
 
   ctx.globalAlpha = u.ko ? 0.22 : 1;
 
-  // legs (simple walking swing)
-  ctx.strokeStyle = pal.secondary; ctx.lineWidth = Math.max(1.4, r*0.13); ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-r*0.22, r*0.5); ctx.lineTo(-r*0.22 + stepSwing*r*0.12, r*0.92); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(r*0.22, r*0.5); ctx.lineTo(r*0.22 - stepSwing*r*0.12, r*0.92); ctx.stroke();
-
-  // cape flick (behind body), leans opposite facing while moving
-  ctx.beginPath();
-  ctx.moveTo(-r*0.58, -r*0.22);
-  ctx.quadraticCurveTo(-r*0.98*u.facing*-1 - (u.moving?r*0.4:0), r*0.85, -r*0.16, r*0.98);
-  ctx.quadraticCurveTo(r*0.05, r*0.32, r*0.16, -r*0.16);
-  ctx.closePath();
-  var capeGrad = ctx.createLinearGradient(0,-r*0.2,0,r);
-  capeGrad.addColorStop(0, pal.secondary); capeGrad.addColorStop(1, '#000');
-  ctx.fillStyle = capeGrad; ctx.globalAlpha = (u.ko?0.22:0.9); ctx.fill();
-  ctx.globalAlpha = u.ko ? 0.22 : 1;
-
-  // back arm + weapon (drawn behind body so it reads as held in the far hand)
-  ctx.save();
-  ctx.translate(u.facing * r*0.5, r*0.1);
-  ctx.rotate(u.facing * (0.35 + stepSwing*0.18));
-  if(u.cls==='warrior'){
-    // sword: blade + crossguard + hilt
-    ctx.fillStyle = pal.metal;
-    ctx.fillRect(-r*0.07, -r*1.35, r*0.14, r*1.1);
-    ctx.beginPath(); ctx.moveTo(-r*0.07,-r*1.35); ctx.lineTo(0,-r*1.55); ctx.lineTo(r*0.07,-r*1.35); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#caa24a'; ctx.fillRect(-r*0.22, -r*0.32, r*0.44, r*0.12);
-    ctx.fillStyle = '#3a2410'; ctx.fillRect(-r*0.06, -r*0.2, r*0.12, r*0.32);
-  } else if(u.cls==='archer'){
-    // bow: arc + string
-    ctx.strokeStyle = '#8a5a2e'; ctx.lineWidth = Math.max(1.2, r*0.1);
-    ctx.beginPath(); ctx.arc(0, -r*0.55, r*0.62, -1.15, 1.15); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(0.7, r*0.035);
-    ctx.beginPath(); ctx.moveTo(Math.cos(-1.15)*r*0.62, -r*0.55+Math.sin(-1.15)*r*0.62);
-    ctx.lineTo(Math.cos(1.15)*r*0.62, -r*0.55+Math.sin(1.15)*r*0.62); ctx.stroke();
+  // the exact hero-showcase portrait artwork, mirrored to face the enemy side
+  var sprite = getLeagueHeroSprite(u.cls, u.controlled==='me' ? 'legendary' : 'epic');
+  var spriteSize = r*2.35;
+  if(sprite){
+    ctx.save();
+    ctx.scale(u.facing, 1);
+    ctx.drawImage(sprite, -spriteSize/2, -spriteSize*0.92, spriteSize, spriteSize);
+    ctx.restore();
   } else {
-    // mage: staff with glowing orb
-    ctx.strokeStyle = '#5a3f22'; ctx.lineWidth = Math.max(1.2, r*0.09);
-    ctx.beginPath(); ctx.moveTo(0, -r*0.2); ctx.lineTo(0, -r*1.5); ctx.stroke();
-    var og = ctx.createRadialGradient(0,-r*1.6,0,0,-r*1.6,r*0.4);
-    og.addColorStop(0,'#e2d4ff'); og.addColorStop(1, pal.primary);
-    ctx.fillStyle = og; ctx.shadowColor = pal.primary; ctx.shadowBlur = r*0.5;
-    ctx.beginPath(); ctx.arc(0,-r*1.6, r*0.22, 0, Math.PI*2); ctx.fill();
-    ctx.shadowBlur = 0;
+    // sprite still rasterizing (first frame only) — simple placeholder disc so nothing pops in abruptly
+    ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.62, 0, Math.PI*2);
+    ctx.fillStyle = pal.primary; ctx.fill();
   }
-  ctx.restore();
-
-  // body (rounded torso)
-  var bodyGrad = ctx.createLinearGradient(0,-r,0,r);
-  bodyGrad.addColorStop(0, pal.primary); bodyGrad.addColorStop(1, pal.secondary);
-  ctx.beginPath(); ctx.arc(0, r*0.05, r*0.68, 0, Math.PI*2); ctx.fillStyle = bodyGrad; ctx.fill();
-  ctx.lineWidth = Math.max(1, r*0.09);
-  ctx.strokeStyle = u.flash>0 ? '#ffffff' : pal.metal; ctx.stroke();
-  // chest armor highlight (rim light) for extra depth at this zoom level
-  ctx.beginPath(); ctx.arc(-r*0.18, -r*0.15, r*0.5, Math.PI*1.05, Math.PI*1.55);
-  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = Math.max(0.8, r*0.05); ctx.stroke();
-
-  // front arm (near hand, small)
-  ctx.save();
-  ctx.translate(-u.facing*r*0.42, r*0.18);
-  ctx.rotate(-u.facing*0.2);
-  ctx.fillStyle = pal.skin;
-  ctx.beginPath(); ctx.ellipse(0,0, r*0.15, r*0.22, 0, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-
-  // head
-  ctx.beginPath(); ctx.arc(0, -r*0.68, r*0.44, 0, Math.PI*2);
-  ctx.fillStyle = pal.skin; ctx.fill();
-  // simple face: eyes toward facing direction
-  ctx.fillStyle = '#231407';
-  ctx.beginPath(); ctx.arc(u.facing*r*0.14-r*0.02, -r*0.7, r*0.05, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(u.facing*r*0.14+r*0.13, -r*0.7, r*0.05, 0, Math.PI*2); ctx.fill();
-  // hood/hair shape colored by class
-  ctx.beginPath(); ctx.arc(0, -r*0.78, r*0.46, Math.PI*1.02, Math.PI*1.98);
-  ctx.fillStyle = pal.secondary; ctx.fill();
 
   // team ring
-  ctx.beginPath(); ctx.arc(0, r*0.05, r*0.68+Math.max(1,r*0.11), 0, Math.PI*2);
-  ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.1); ctx.globalAlpha = u.ko?0.15:0.9; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62, 0, Math.PI*2);
+  ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.09); ctx.globalAlpha = u.ko?0.15:0.85; ctx.stroke();
 
   // player gold outline + soft glow so your own hero always reads instantly
   if(u.controlled==='me'){
-    ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.35;
-    ctx.beginPath(); ctx.arc(0, r*0.05, r*0.68+Math.max(2,r*0.24), 0, Math.PI*2);
-    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.08); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
+    ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.3;
+    ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62+Math.max(2,r*0.18), 0, Math.PI*2);
+    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.07); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
     ctx.shadowBlur = 0;
   }
 
   // hit flash overlay
   if(u.flash>0 && !u.ko){
-    ctx.globalAlpha = Math.min(0.75, u.flash*4);
-    ctx.beginPath(); ctx.arc(0, r*0.05, r*0.72, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.globalAlpha = Math.min(0.6, u.flash*3.2);
+    ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.75, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
   }
   ctx.globalAlpha = 1;
-  } // !use3D
 
   ctx.restore();
 
@@ -5176,6 +5241,13 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   }
 }
 
+function hexToRgbStr(hex){
+  var h = hex.replace('#','');
+  if(h.length===3) h = h.split('').map(function(c){ return c+c; }).join('');
+  var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
+  return r+','+g+','+b;
+}
+
 function leagueDrawFx(ctx, T){
   league.fx.forEach(function(f){
     var t = f.born / f.life;
@@ -5190,6 +5262,20 @@ function leagueDrawFx(ctx, T){
       var lx = f.x0 + (f.x-f.x0)*Math.min(1,t*2.4), ly = f.y0 + (f.y-f.y0)*Math.min(1,t*2.4);
       ctx.beginPath(); ctx.arc(lx*T, ly*T, T*1.6, 0, Math.PI*2);
       ctx.fillStyle = f.color; ctx.shadowColor = f.color; ctx.shadowBlur = 10; ctx.fill();
+    } else if(f.type==='arrow'){
+      var progress = Math.min(1, t*2.6);
+      var ax = f.x0 + (f.x-f.x0)*progress, ay = f.y0 + (f.y-f.y0)*progress;
+      var ang = Math.atan2(f.y-f.y0, f.x-f.x0);
+      ctx.translate(ax*T, ay*T); ctx.rotate(ang);
+      // shaft
+      ctx.strokeStyle = '#c8a35a'; ctx.lineWidth = Math.max(1.4, T*0.16); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-T*3.2, 0); ctx.lineTo(T*1.1, 0); ctx.stroke();
+      // fletching
+      ctx.strokeStyle = '#f2ead8'; ctx.lineWidth = Math.max(1, T*0.1);
+      ctx.beginPath(); ctx.moveTo(-T*2.6,0); ctx.lineTo(-T*3.4,-T*0.7); ctx.moveTo(-T*2.6,0); ctx.lineTo(-T*3.4,T*0.7); ctx.stroke();
+      // glowing arrowhead
+      ctx.fillStyle = f.color; ctx.shadowColor = f.color; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.moveTo(T*1.5,0); ctx.lineTo(T*0.6,-T*0.55); ctx.lineTo(T*0.6,T*0.55); ctx.closePath(); ctx.fill();
     } else if(f.type==='ko'){
       ctx.translate(f.x*T, f.y*T);
       ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2;
@@ -5203,9 +5289,16 @@ function leagueDrawFx(ctx, T){
       ctx.beginPath(); ctx.arc(0,0, rr2*0.6, 0, Math.PI*2); ctx.stroke();
     } else if(f.type==='nova'){
       ctx.translate(f.x*T, f.y*T);
-      var g = ctx.createRadialGradient(0,0,0,0,0,T*9);
-      g.addColorStop(0,'rgba(168,107,255,0.85)'); g.addColorStop(1,'rgba(168,107,255,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,T*9*(0.4+t*0.6),0,Math.PI*2); ctx.fill();
+      var novaColor = f.color || '168,107,255';
+      var rgb = novaColor.charAt(0)==='#' ? hexToRgbStr(novaColor) : novaColor;
+      var radiusMax = f.big ? T*20 : T*9;
+      var g = ctx.createRadialGradient(0,0,0,0,0,radiusMax);
+      g.addColorStop(0,'rgba('+rgb+',0.85)'); g.addColorStop(1,'rgba('+rgb+',0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,radiusMax*(0.4+t*0.6),0,Math.PI*2); ctx.fill();
+      if(f.big){
+        ctx.strokeStyle = 'rgba('+rgb+',0.9)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0,0, radiusMax*(0.5+t*0.5), 0, Math.PI*2); ctx.stroke();
+      }
     } else if(f.type==='barrage'){
       ctx.translate(f.x*T, f.y*T);
       ctx.strokeStyle = '#ffd45e'; ctx.lineWidth = 2;
@@ -5591,6 +5684,7 @@ function wireEvents(){
   $('lgs-confirm').addEventListener('click', launchLeagueScreen);
   $('lgs-back').addEventListener('click', exitLeagueToTitle);
   $('lg-special').addEventListener('click', useLeagueSpecial);
+  $('lg-ultimate').addEventListener('click', useLeagueUltimate);
   $('lg-ability').addEventListener('click', useLeagueAbility);
   $('btn-league-retreat').addEventListener('click', retreatFromLeague);
   $('league-tip-close').addEventListener('click', function(){
