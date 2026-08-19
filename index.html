@@ -1403,6 +1403,60 @@ input{font-family:inherit;}
 .mp-roster-list span{ font-size:11px; padding:3px 9px; border-radius:8px; background:var(--bg-dark); border:1px solid var(--line); color:var(--text-light); }
 .btn-mp-mode{ background:linear-gradient(180deg, #5a3fd6, #2c1c74); color:#f2ead9; border:1px solid #7a5cf0; box-shadow:0 3px 0 #1c1148; }
 .btn-mp-mode:active{ box-shadow:0 1px 0 #1c1148; }
+/* ============================= FRIEND DUEL (1×1) ============================= */
+.btn-duel-mode{
+  background:linear-gradient(180deg, #ff8a5c, #a3341a 60%, #5c1a0d);
+  color:#fff; border:1px solid rgba(255,138,92,0.4);
+  box-shadow:0 6px 0 #5c1a0d, 0 10px 20px rgba(255,138,92,0.2);
+}
+.btn-duel-mode:active{ box-shadow:0 2px 0 #5c1a0d; }
+
+.duel-my-code-box, .duel-enter-box{
+  text-align:center; padding:14px; border-radius:12px;
+  background:var(--bg-dark); border:1px solid var(--line);
+}
+.duel-my-code-label{ font-size:12px; color:var(--text-dim); margin-bottom:8px; }
+.duel-my-code{
+  font-size:26px; font-weight:900; letter-spacing:4px; color:var(--gold-bright);
+  margin-bottom:10px; font-family:monospace;
+}
+.duel-divider{ text-align:center; color:var(--text-faint); font-size:12px; margin:2px 0; }
+.duel-enter-box input{
+  width:100%; text-align:center; font-size:22px; font-weight:800; letter-spacing:6px;
+  font-family:monospace; text-transform:uppercase;
+  padding:10px; border-radius:10px; background:var(--bg-panel); border:1px solid var(--line);
+  color:var(--text-light); margin:8px 0 12px;
+}
+.duel-waiting-box{ text-align:center; padding:16px; }
+.duel-waiting-box p{ font-size:13px; color:var(--text-dim); margin:10px 0 14px; }
+
+.duel-incoming-box{ max-width:320px; }
+.duel-incoming-box h3{ margin:4px 0 8px; }
+.duel-incoming-box p{ font-size:13px; color:var(--text-dim); margin-bottom:14px; }
+.duel-incoming-btns{ display:flex; gap:10px; }
+.duel-incoming-btns .btn{ flex:1; }
+
+#duel-round-pips{
+  display:flex; gap:6px; align-items:center; justify-content:center;
+}
+.duel-round-pip{
+  width:16px; height:16px; border-radius:50%;
+  background:#2c2340; border:1px solid var(--line);
+}
+.duel-round-pip.won{ background:linear-gradient(180deg, var(--teal), var(--teal-dark)); border-color:var(--teal-dark); }
+.duel-round-pip.lost{ background:linear-gradient(180deg, var(--crimson-bright), var(--crimson-dark)); border-color:var(--crimson-dark); }
+
+.duel-round-banner{
+  position:absolute; top:38%; left:50%; transform:translate(-50%,-50%);
+  z-index:40; text-align:center; pointer-events:none;
+  font-size:20px; font-weight:900; color:var(--gold-bright);
+  text-shadow:0 4px 16px rgba(0,0,0,0.8);
+  background:rgba(6,3,12,0.55); padding:14px 26px; border-radius:14px;
+  border:1px solid var(--gold-dim);
+  animation:duelBannerPop .4s ease;
+}
+@keyframes duelBannerPop{ 0%{ transform:translate(-50%,-50%) scale(0.7); opacity:0; } 100%{ transform:translate(-50%,-50%) scale(1); opacity:1; } }
+
 </style>
 </head>
 <body>
@@ -1424,6 +1478,7 @@ input{font-family:inherit;}
         <button class="btn btn-secondary" id="btn-new-game">مغامرة جديدة</button>
         <button class="btn btn-league-mode" id="btn-league">⚔️ معركة الدوري 5×5 (بوتات)</button>
         <button class="btn btn-mp-mode" id="btn-league-online">🌐 اونلاين 5×5 (لاعبين حقيقيين)</button>
+        <button class="btn btn-duel-mode" id="btn-duel-open">🗡️ تحدي صديق 1×1</button>
       </div>
     </div>
     <div class="credit-foot">تصميم وإخراج بطلك • نسخة أوفلاين كاملة</div>
@@ -1775,14 +1830,18 @@ input{font-family:inherit;}
         <div class="num" id="league-sweep-num">20</div>
         <div class="lbl" id="league-sweep-lbl">استيلاء كامل! العد التنازلي للفوز</div>
       </div>
+      <div class="duel-round-banner hidden" id="duel-round-banner"></div>
       <div id="league-killfeed"></div>
     </div>
 
     <div class="league-header">
       <button class="btn-retreat" id="btn-league-retreat">🚪 انسحاب</button>
       <div class="league-timer" id="league-timer">3:00</div>
-      <div class="league-score">
+      <div class="league-score" id="league-score-normal">
         <span class="zone-pip" id="lg-pip-r0"></span><span class="zone-pip" id="lg-pip-r1"></span><span class="zone-pip" id="lg-pip-r2"></span><span class="zone-pip" id="lg-pip-r3"></span><span class="zone-pip" id="lg-pip-r4"></span>
+      </div>
+      <div class="hidden" id="duel-round-pips">
+        <span class="duel-round-pip" id="duel-pip-0"></span><span class="duel-round-pip" id="duel-pip-1"></span><span class="duel-round-pip" id="duel-pip-2"></span>
       </div>
     </div>
     <div class="roster-row roster-row-top" id="league-roster-blue"></div>
@@ -1827,6 +1886,56 @@ input{font-family:inherit;}
       <div class="mp-roster-list" id="mp-roster-list"></div>
       <button class="btn btn-secondary btn-sm" id="mp-wait-cancel">إلغاء</button>
     </div>
+  </div>
+
+  <!-- ============================= FRIEND DUEL — CHALLENGE MODAL ============================= -->
+  <div id="modal-duel" class="modal-overlay hidden">
+    <div class="modal-sheet ornate-corners" style="max-height:none;">
+      <div class="modal-head"><h2>🗡️ تحدي صديق 1×1</h2><button class="modal-close" data-close="modal-duel">✕</button></div>
+      <div class="modal-body">
+        <div class="duel-my-code-box">
+          <div class="duel-my-code-label">كودك — شاركه مع صديقك</div>
+          <div class="duel-my-code" id="duel-my-code">------</div>
+          <button class="btn btn-secondary btn-sm" id="duel-copy-code">📋 نسخ الكود</button>
+        </div>
+        <div class="duel-divider">أو</div>
+        <div class="duel-enter-box" id="duel-enter-box">
+          <div class="duel-my-code-label">عندك كود صديقك؟ اكتبه هنا وتحداه</div>
+          <input type="text" id="duel-code-input" maxlength="6" placeholder="XXXXXX" autocomplete="off" autocapitalize="characters">
+          <button class="btn btn-primary" id="duel-send-challenge">تحدي ⚔️</button>
+        </div>
+        <div class="duel-waiting-box hidden" id="duel-waiting-box">
+          <div class="mp-spinner"></div>
+          <p id="duel-waiting-msg">بانتظار رد صديقك...</p>
+          <button class="btn btn-secondary btn-sm" id="duel-cancel-wait">إلغاء التحدي</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= FRIEND DUEL — INCOMING CHALLENGE (global alert) ============================= -->
+  <div id="overlay-duel-incoming" class="mp-wait-overlay hidden" style="z-index:9000;">
+    <div class="panel mp-wait-box ornate-corners duel-incoming-box">
+      <div class="overlay-emoji" style="margin:0 0 4px;">🗡️</div>
+      <h3 id="duel-incoming-title">تحدي مبارزة!</h3>
+      <p id="duel-incoming-msg"></p>
+      <div class="duel-incoming-btns">
+        <button class="btn btn-secondary btn-sm" id="duel-decline-btn">رفض</button>
+        <button class="btn btn-primary btn-sm" id="duel-accept-btn">قبول ⚔️</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= FRIEND DUEL — MATCH RESULT ============================= -->
+  <div id="overlay-duel-result" class="fullscreen-overlay hidden">
+    <div class="overlay-emoji" id="duel-result-emoji">🏆</div>
+    <div class="overlay-title win" id="duel-result-title">انتصار!</div>
+    <div class="overlay-sub" id="duel-result-sub"></div>
+    <div class="reward-row">
+      <div class="reward-chip xp">+<span id="duel-result-xp">0</span> خبرة</div>
+      <div class="reward-chip gold">+<span id="duel-result-gold">0</span> ذهب</div>
+    </div>
+    <button class="btn btn-primary" id="btn-duel-result-continue" style="max-width:220px;margin-top:8px;">متابعة</button>
   </div>
 
   <!-- ============================= FULLSCREEN OVERLAYS ============================= -->
@@ -2750,10 +2859,18 @@ function adminLogout(){
   toast('🚪 تم تسجيل خروج المطور');
 }
 
+function generateFriendCode(){
+  var alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no O/0/I/1 — easy to read aloud/type
+  var s = '';
+  for(var i=0;i<6;i++) s += alphabet[Math.floor(Math.random()*alphabet.length)];
+  return s;
+}
+
 function newPlayer(cls, name){
   var c = CLASSES[cls];
   return {
     id: generateId(),
+    friendCode: generateFriendCode(),
     name: name || 'البطل',
     cls: cls,
     level:1, xp:0,
@@ -2801,6 +2918,7 @@ function loadGame(){
     if(!p.equipment) p.equipment = { weapon:'weapon_basic', armor:'armor_basic', accessory:null };
     if(!('accessory' in p.equipment)) p.equipment.accessory = null;
     if(!p.id){ p.id = generateId(); registerAccount(p); } // migrate legacy save into accounts registry
+    if(!p.friendCode) p.friendCode = generateFriendCode();
     state.player = p;
     return true;
   }catch(e){ return false; }
@@ -4170,6 +4288,7 @@ var league = null; // active match state, null when not playing
 var MP_SERVER_URL = 'wss://sowrd-of-legends.omarawaad69.workers.dev';
 // ⚠️ غيّر السطر ده لرابط سيرفر الملتيبلاير بتاعك بعد ما تنشره (شوف
 // multiplayer-server/README.md في ملفات المشروع لخطوات النشر بالتفصيل).
+var MP_HTTP_URL = MP_SERVER_URL.replace(/^wss:/,'https:').replace(/^ws:/,'http:');
 
 var mp = {
   lobbyWs:null, roomWs:null, myId:null, myName:null, myCls:null,
@@ -4291,6 +4410,24 @@ function findLeagueUnit(team, idx){
 
 function onMpRoomMessage(evt){
   var data; try{ data = JSON.parse(evt.data); }catch(e){ return; }
+
+  // duel handshake messages can arrive before `league` exists at all —
+  // handle them first, unconditionally.
+  if(data.type==='peer-joined'){
+    if(duel.awaitingPeer){
+      duel.awaitingPeer = false;
+      mpSend({ type:'iam', name:state.player.name, cls:state.player.cls, lvl:state.player.level||1 });
+    }
+    return;
+  }
+  if(data.type==='iam'){
+    if(duel.pendingRole){
+      duel.opponent = { name:data.name, cls:data.cls, lvl:data.lvl||1 };
+      startDuelMatchNow();
+    }
+    return;
+  }
+
   if(!league) return;
   if(data.type==='input'){
     if(!league.isHost) return;
@@ -4357,7 +4494,17 @@ function onMpRoomMessage(evt){
     if(!a4 || !t4) return;
     league.fx.push({ type:data.kind, x:t4.x, y:t4.y, x0:a4.x, y0:a4.y, life:0.35, born:0,
       color: a4.cls==='mage' ? '#a86bff' : (a4.cls==='archer' ? '#ffd45e' : '#3fe0d0') });
+  } else if(data.type==='duelRoundEnd'){
+    if(league.isHost) return; // host already resolved this locally
+    duelApplyRoundEndFromPeer(data);
   } else if(data.type==='peer-left'){
+    if(league.isDuel){
+      if(!league.ended){
+        toast('انسحب صديقك من المبارزة 🚪');
+        duelEndMatch('me', 'opponent-left');
+      }
+      return;
+    }
     toast('لاعب انسحب من المعركة، هيتحول مكانه لبوت 🤖');
     var lu = league.units.filter(function(x){ return x.peerId===data.id; })[0];
     if(lu) lu.controlled='ai';
@@ -4519,6 +4666,280 @@ function ensureLeaguePlayer(){
   }
 }
 
+/* ============================================================
+   FRIEND DUEL (1×1) — challenge a friend by code, best of 3 rounds.
+   Reuses the exact same real-time engine as the 5×5 league (movement,
+   combat, abilities, networking relay) with league.isDuel=true, just
+   with 2 units instead of 10 and round-based win conditions instead
+   of zone capture.
+   ============================================================ */
+var duel = {
+  matchId: null,
+  isHost: false,
+  opponent: null,       // {name, cls, lvl} once known
+  incomingChallenge: null,
+  pollTimer: null,
+  cancelTimeout: null
+};
+
+function openDuelModal(){
+  if(!ensureLeaguePlayer()) return;
+  $('duel-my-code').textContent = state.player.friendCode || '------';
+  $('duel-code-input').value = '';
+  $('duel-waiting-box').classList.add('hidden');
+  $('duel-enter-box').style.display = '';
+  $('modal-duel').classList.remove('hidden');
+}
+
+function copyDuelCode(){
+  var code = state.player.friendCode || '';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(function(){ toast('✅ اتنسخ الكود: '+code); })
+      .catch(function(){ toast('كودك: '+code); });
+  } else { toast('كودك: '+code); }
+}
+
+function sendDuelChallenge(){
+  var code = ($('duel-code-input').value||'').trim().toUpperCase();
+  if(code.length<4){ toast('اكتب كود صحيح'); return; }
+  if(code === state.player.friendCode){ toast('متقدرش تتحدى نفسك 😄'); return; }
+  var matchId = 'duel_'+generateId();
+  fetch(MP_HTTP_URL + '/box/'+encodeURIComponent(code), {
+    method:'POST', headers:{'content-type':'application/json'},
+    body: JSON.stringify({ from: state.player.friendCode, fromName: state.player.name, fromCls: state.player.cls, matchId: matchId })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(!data || data.error){ toast('محدش لقيناه بالكود ده'); return; }
+    $('duel-enter-box').style.display = 'none';
+    $('duel-waiting-box').classList.remove('hidden');
+    $('duel-waiting-msg').textContent = 'بانتظار رد صاحب الكود '+code+'...';
+    duel.opponent = null;
+    connectDuelRoom(matchId, true, null);
+    duel.cancelTimeout = setTimeout(function(){
+      if(duel.matchId===matchId && !(league && league.isDuel)){
+        toast('صديقك ملبيش التحدي، حاول تاني لاحقًا');
+        cancelDuelWait();
+      }
+    }, 90000);
+  }).catch(function(){ toast('تعذر الاتصال بسيرفر التحدي — تأكد من الإنترنت'); });
+}
+
+function cancelDuelWait(){
+  if(duel.cancelTimeout) clearTimeout(duel.cancelTimeout);
+  duel.cancelTimeout = null;
+  try{ if(mp.roomWs) mp.roomWs.close(); }catch(e){}
+  duel.matchId = null;
+  $('modal-duel').classList.add('hidden');
+}
+
+/* ---- global challenge mailbox polling — runs the whole time the app is
+   open, regardless of which screen is showing, so a friend's challenge
+   can reach the player even mid-battle elsewhere. ---- */
+function startDuelPolling(){
+  if(duel.pollTimer) return;
+  duel.pollTimer = setInterval(pollDuelMailbox, 4000);
+  pollDuelMailbox();
+}
+function pollDuelMailbox(){
+  if(!state.player || !state.player.friendCode) return;
+  if(duel.incomingChallenge) return; // already showing one — don't stack alerts
+  if(league && league.isDuel && !league.ended) return; // already dueling
+  fetch(MP_HTTP_URL + '/box/'+encodeURIComponent(state.player.friendCode))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data && data.pending) showIncomingDuelAlert(data.pending);
+    }).catch(function(){ /* offline — just try again next tick */ });
+}
+
+function showIncomingDuelAlert(challenge){
+  duel.incomingChallenge = challenge;
+  $('duel-incoming-title').textContent = '🗡️ تحدي مبارزة!';
+  $('duel-incoming-msg').textContent = challenge.fromName+' (بطل '+(CLASSES[challenge.fromCls]?CLASSES[challenge.fromCls].name:'')+') تحداك لمبارزة 1×1 — أفضل 3 من 5 جولات!';
+  $('overlay-duel-incoming').classList.remove('hidden');
+}
+
+function declineIncomingDuel(){
+  var c = duel.incomingChallenge;
+  duel.incomingChallenge = null;
+  $('overlay-duel-incoming').classList.add('hidden');
+  if(c) fetch(MP_HTTP_URL + '/box/'+encodeURIComponent(state.player.friendCode)+'/clear', { method:'POST' }).catch(function(){});
+}
+
+function acceptIncomingDuel(){
+  var c = duel.incomingChallenge;
+  if(!c) return;
+  duel.incomingChallenge = null;
+  $('overlay-duel-incoming').classList.add('hidden');
+  fetch(MP_HTTP_URL + '/box/'+encodeURIComponent(state.player.friendCode)+'/clear', { method:'POST' }).catch(function(){});
+  connectDuelRoom(c.matchId, false, { name:c.fromName, cls:c.fromCls, lvl:1 });
+}
+
+function connectDuelRoom(matchId, isHost, opponentInfo){
+  duel.matchId = matchId;
+  duel.isHost = isHost;
+  if(opponentInfo) duel.opponent = opponentInfo;
+  mp.myId = state.player.id || generateId();
+  var url = MP_SERVER_URL + '/room/'+encodeURIComponent(matchId)+'?id='+encodeURIComponent(mp.myId);
+  try{ mp.roomWs = new WebSocket(url); }
+  catch(e){ toast('تعذر الاتصال بسيرفر المبارزة'); return; }
+  mp.roomWs.onopen = function(){
+    if(!isHost){
+      // the accepter already knows the challenger's info from the mailbox
+      // payload, so it can announce itself and start immediately.
+      mpSend({ type:'iam', name:state.player.name, cls:state.player.cls, lvl:state.player.level||1 });
+      startDuelMatchNow();
+    }
+    // the challenger (host) just waits quietly for the accepter's 'iam'
+  };
+  mp.roomWs.onmessage = onMpRoomMessage;
+  mp.roomWs.onclose = function(){
+    if(league && league.isDuel && !league.ended) toast('انقطع الاتصال بالمبارزة');
+  };
+}
+
+function startDuelMatchNow(){
+  if(league && league.isDuel && !league.ended) return; // avoid double-start if both signals arrive close together
+  if(duel.cancelTimeout){ clearTimeout(duel.cancelTimeout); duel.cancelTimeout = null; }
+  $('modal-duel').classList.add('hidden');
+  if(!duel.opponent) duel.opponent = { name:'الخصم', cls:'warrior', lvl: state.player.level||1 };
+  buildDuelMatch();
+  launchLeagueScreen();
+}
+
+function buildDuelMatch(){
+  league = newLeagueState();
+  league.isDuel = true;
+  league.online = true;
+  league.isHost = duel.isHost;
+  league.zones = []; // no capture zones in a duel
+  league.time = 999999; // the round-based win condition ends duels, not the clock
+  league.duelWins = { blue:0, red:0 };
+  league.duelRound = 1;
+  league.duelBusy = false;
+  var myLvl = state.player.level || 1;
+  var myU = makeLeagueUnit('blue', 0, state.player.cls, myLvl);
+  myU.controlled = 'me';
+  myU.peerId = mp.myId;
+  var oppU = makeLeagueUnit('red', 0, duel.opponent.cls || 'warrior', duel.opponent.lvl || myLvl);
+  oppU.controlled = 'net';
+  oppU.peerId = null; // the only other socket in this room — no id matching needed for a 1v1
+  duelPositionUnits(myU, oppU);
+  league.units.push(myU, oppU);
+}
+
+function duelPositionUnits(myU, oppU){
+  myU.x = 50; myU.y = 92; myU.spawnX = 50; myU.spawnY = 92;
+  oppU.x = 50; oppU.y = 58; oppU.spawnX = 50; oppU.spawnY = 58;
+  myU.hp = myU.maxhp; oppU.hp = oppU.maxhp;
+  myU.ko = false; oppU.ko = false;
+}
+
+function updateDuelRoundPips(){
+  if(!league || !league.isDuel) return;
+  var mine = league.duelWins.blue||0, theirs = league.duelWins.red||0;
+  for(var i=0;i<3;i++){
+    var el = $('duel-pip-'+i);
+    if(!el) continue;
+    el.classList.remove('won','lost');
+    if(i<mine) el.classList.add('won');
+    else if(i<mine+theirs) el.classList.add('lost');
+  }
+}
+
+function duelShowRoundBanner(text, ms){
+  var el = $('duel-round-banner');
+  if(!el) return;
+  el.textContent = text;
+  el.classList.remove('hidden');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(function(){ el.classList.add('hidden'); }, ms||1600);
+}
+
+function duelRoundEnd(winningTeam){
+  if(!league || !league.isDuel || league.duelBusy || league.ended) return;
+  league.duelBusy = true;
+  league.duelWins[winningTeam] = (league.duelWins[winningTeam]||0) + 1;
+  updateDuelRoundPips();
+  var iWonRound = winningTeam==='blue';
+
+  if(league.online && league.isHost){
+    mpBroadcast({ type:'duelRoundEnd', winner:winningTeam, wins:league.duelWins, round:league.duelRound });
+  }
+
+  if(league.duelWins[winningTeam] >= 2){
+    duelShowRoundBanner(iWonRound ? '🏆 فزت بالمبارزة!' : '💥 خسرت المبارزة', 2200);
+    setTimeout(function(){ duelEndMatch(iWonRound?'me':'opp', 'rounds'); }, 1600);
+    return;
+  }
+
+  duelShowRoundBanner(iWonRound ? 'فزت بالجولة! 🎉' : 'خسرت الجولة 💢', 1600);
+  setTimeout(function(){
+    if(!league || !league.isDuel || league.ended) return;
+    league.duelRound++;
+    var myU = league.units[0], oppU = league.units[1];
+    duelPositionUnits(myU, oppU);
+    league.duelBusy = false;
+    duelShowRoundBanner('الجولة '+league.duelRound+' — قاتل! ⚔️', 1400);
+  }, 1900);
+}
+
+function duelApplyRoundEndFromPeer(data){
+  if(!league || !league.isDuel || league.ended) return;
+  league.duelWins = data.wins;
+  updateDuelRoundPips();
+  var iWonRound = data.winner==='blue';
+  league.duelBusy = true;
+  if(league.duelWins[data.winner] >= 2){
+    duelShowRoundBanner(iWonRound ? '🏆 فزت بالمبارزة!' : '💥 خسرت المبارزة', 2200);
+    setTimeout(function(){ duelEndMatch(iWonRound?'me':'opp', 'rounds'); }, 1600);
+    return;
+  }
+  duelShowRoundBanner(iWonRound ? 'فزت بالجولة! 🎉' : 'خسرت الجولة 💢', 1600);
+  setTimeout(function(){
+    if(!league || !league.isDuel || league.ended) return;
+    league.duelRound = data.round+1;
+    league.duelBusy = false;
+    duelShowRoundBanner('الجولة '+league.duelRound+' — قاتل! ⚔️', 1400);
+  }, 1900);
+}
+
+function duelEndMatch(result, reason){
+  if(!league || league.ended) return;
+  league.ended = true;
+  var p = state.player;
+  var xpGain, goldGain, title, sub, emoji;
+  if(result==='me'){
+    xpGain = 180 + p.level*7; goldGain = rand(60,110);
+    title='انتصار في المبارزة!'; emoji='🏆';
+    sub = reason==='opponent-left' ? 'انسحب خصمك من المبارزة — الفوز لك!' : 'فزت 2 مقابل '+(league.duelWins.red||0)+' في مواجهة '+(duel.opponent?duel.opponent.name:'الخصم')+'!';
+  } else {
+    xpGain = 50; goldGain = rand(15,30);
+    title='خسرت المبارزة'; emoji='💥';
+    sub = 'خسرت أمام '+(duel.opponent?duel.opponent.name:'الخصم')+' — حاول تاني!';
+  }
+  p.xp += xpGain; p.gold += goldGain;
+  var leveledUpTexts = [];
+  while(p.xp >= xpToNext(p.level)){ p.xp -= xpToNext(p.level); levelUpPlayer(leveledUpTexts); }
+  renderHUD();
+  saveGame(true);
+
+  $('duel-result-emoji').textContent = emoji;
+  $('duel-result-title').textContent = title;
+  $('duel-result-title').className = 'overlay-title ' + (result==='me' ? 'win':'lose');
+  $('duel-result-sub').textContent = sub;
+  $('duel-result-xp').textContent = xpGain;
+  $('duel-result-gold').textContent = goldGain;
+  $('overlay-duel-result').classList.remove('hidden');
+  if(result==='me') launchConfetti && launchConfetti('confetti-layer');
+  pendingLevelUps = leveledUpTexts;
+  levelUpReturnContext = 'league';
+  try{ if(mp.roomWs) mp.roomWs.close(); }catch(e){}
+}
+
+function closeDuelResultAndContinue(){
+  $('overlay-duel-result').classList.add('hidden');
+  showNextLevelUpOrReturn();
+}
+
 function newLeagueState(){
   return {
     time: LEAGUE_ROUND_SECONDS,
@@ -4613,7 +5034,15 @@ function launchLeagueScreen(){
     showScreen('screen-league');
     var tip = $('league-tip');
     if(tip){
-      tip.classList.toggle('hidden', !!window._solLeagueTipDismissedThisSession);
+      tip.classList.toggle('hidden', league.isDuel || !!window._solLeagueTipDismissedThisSession);
+    }
+    var isDuel = !!league.isDuel;
+    $('league-timer').classList.toggle('hidden', isDuel);
+    $('league-score-normal').classList.toggle('hidden', isDuel);
+    $('duel-round-pips').classList.toggle('hidden', !isDuel);
+    if(isDuel){
+      updateDuelRoundPips();
+      duelShowRoundBanner('الجولة 1 — قاتل! ⚔️', 1400);
     }
     requestAnimationFrame(function(){
       try{
@@ -4774,6 +5203,7 @@ function leagueUpdateMovement(dt){
   var margin = 4;
   league.units.forEach(function(u){
     if(u.ko){
+      if(league.isDuel) return; // duel rounds are reset explicitly by duelRoundEnd, not an auto-respawn timer
       u.koTimer -= dt;
       if(u.koTimer<=0){
         u.ko=false; u.hp=u.maxhp; u.x=u.spawnX; u.y=u.spawnY;
@@ -4855,11 +5285,14 @@ function leagueDealDamage(attacker, target, mult, label){
   if(target.controlled==='me' || attacker.controlled==='me') league.shake = Math.min(6, league.shake+2.2);
   var isKo = false;
   if(target.hp<=0){
-    target.hp = 0; target.ko = true; target.koTimer = LEAGUE_RESPAWN_SECONDS; isKo = true;
+    target.hp = 0; target.ko = true;
+    target.koTimer = league.isDuel ? 0 : LEAGUE_RESPAWN_SECONDS;
+    isKo = true;
     league.fx.push({ type:'ko', x:target.x, y:target.y, life:0.6, born:0 });
     var atkName = attacker.controlled==='me' ? 'أنت' : CLASSES[attacker.cls].name+' ('+(attacker.team==='blue'?'🔵':'🔴')+')';
     var tgtName = target.controlled==='me' ? 'أنت' : CLASSES[target.cls].name+' ('+(target.team==='blue'?'🔵':'🔴')+')';
     leaguePushKillfeed('⚔️ '+atkName+' أسقط '+tgtName);
+    if(league.isDuel && !league.ended) duelRoundEnd(attacker.team);
   }
   // host relays the outcome to every peer so their screens show the same hit/KO/damage number
   if(league.online && league.isHost){
@@ -4883,6 +5316,7 @@ function leagueUpdateCombat(dt){
   // runs on the host only (or locally in offline mode) — every unit, including the
   // local player's and every networked real player's, auto-fires at the nearest
   // enemy in range while maneuvering; the host is authoritative for all damage.
+  if(league.isDuel && league.duelBusy) return; // paused during round transition
   league.units.forEach(function(u){
     if(u.ko) return;
     if(u.flash>0) u.flash -= dt;
@@ -5176,43 +5610,48 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   ctx.translate(0, bobY);
   // a notch smaller than before so more of the battlefield reads at once
   var r = (u.controlled==='me' ? 2.9 : 3.05) * T * scale;
+  var use3D = League3D && League3D.ready;
 
-  // ground shadow
-  ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.85, r*0.28, 0, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
+  if(!use3D){
+    // ground shadow
+    ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.85, r*0.28, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
+  }
 
   ctx.globalAlpha = u.ko ? 0.22 : 1;
 
-  // the exact hero-showcase portrait artwork, mirrored to face the enemy side
-  var sprite = getLeagueHeroSprite(u.cls, u.controlled==='me' ? 'legendary' : 'epic');
-  var spriteSize = r*2.35;
-  if(sprite){
-    ctx.save();
-    ctx.scale(u.facing, 1);
-    ctx.drawImage(sprite, -spriteSize/2, -spriteSize*0.92, spriteSize, spriteSize);
-    ctx.restore();
-  } else {
-    // sprite still rasterizing (first frame only) — simple placeholder disc so nothing pops in abruptly
-    ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.62, 0, Math.PI*2);
-    ctx.fillStyle = pal.primary; ctx.fill();
-  }
+  if(!use3D){
+    // the exact hero-showcase portrait artwork, mirrored to face the enemy side
+    var sprite = getLeagueHeroSprite(u.cls, u.controlled==='me' ? 'legendary' : 'epic');
+    var spriteSize = r*2.35;
+    if(sprite){
+      ctx.save();
+      ctx.scale(u.facing, 1);
+      ctx.drawImage(sprite, -spriteSize/2, -spriteSize*0.92, spriteSize, spriteSize);
+      ctx.restore();
+    } else {
+      // sprite still rasterizing (first frame only) — simple placeholder disc so nothing pops in abruptly
+      ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.62, 0, Math.PI*2);
+      ctx.fillStyle = pal.primary; ctx.fill();
+    }
 
-  // team ring
-  ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62, 0, Math.PI*2);
-  ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.09); ctx.globalAlpha = u.ko?0.15:0.85; ctx.stroke();
+    // team ring
+    ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62, 0, Math.PI*2);
+    ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.09); ctx.globalAlpha = u.ko?0.15:0.85; ctx.stroke();
 
-  // player gold outline + soft glow so your own hero always reads instantly
-  if(u.controlled==='me'){
-    ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.3;
-    ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62+Math.max(2,r*0.18), 0, Math.PI*2);
-    ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.07); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
-    ctx.shadowBlur = 0;
-  }
+    // player gold outline + soft glow so your own hero always reads instantly
+    if(u.controlled==='me'){
+      ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.3;
+      ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62+Math.max(2,r*0.18), 0, Math.PI*2);
+      ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.07); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
-  // hit flash overlay
-  if(u.flash>0 && !u.ko){
-    ctx.globalAlpha = Math.min(0.6, u.flash*3.2);
-    ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.75, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    // hit flash overlay
+    if(u.flash>0 && !u.ko){
+      ctx.globalAlpha = Math.min(0.6, u.flash*3.2);
+      ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.75, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    }
   }
   ctx.globalAlpha = 1;
 
@@ -5222,7 +5661,7 @@ function leagueDrawUnitBody(ctx, u, T, scale){
     ctx.save();
     ctx.translate(u.x*T, u.y*T - r*1.6);
     ctx.font = 'bold '+(T*2.6)+'px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#ffce6b';
-    ctx.fillText(Math.ceil(u.koTimer)+'s ⏳', 0, 0);
+    ctx.fillText(league.isDuel ? 'سقط! 💥' : (Math.ceil(u.koTimer)+'s ⏳'), 0, 0);
     ctx.restore();
   } else {
     // nameplate + HP bar above head — legible now that units render this large
@@ -5477,9 +5916,11 @@ function exitLeagueToTitle(){
 
 function retreatFromLeague(){
   if(!league || league.ended) return;
-  showConfirm('هل تريد الانسحاب من المعركة؟ لن تحصل على أي مكافآت.', function(){
+  var msg = league.isDuel ? 'هل تريد الانسحاب من المبارزة؟ ستُحتسب هزيمة ولن تحصل على مكافآت.' : 'هل تريد الانسحاب من المعركة؟ لن تحصل على أي مكافآت.';
+  showConfirm(msg, function(){
     league.ended = true;
     hideLeagueSweepBanner();
+    if(league.isDuel){ try{ if(mp.roomWs) mp.roomWs.close(); }catch(e){} }
     exitLeagueToTitle();
   });
 }
@@ -5692,6 +6133,18 @@ function wireEvents(){
     window._solLeagueTipDismissedThisSession = true;
   });
   $('btn-league-result-continue').addEventListener('click', closeLeagueResultAndContinue);
+
+  // ---- friend duel (1×1) ----
+  $('btn-duel-open').addEventListener('click', openDuelModal);
+  $('duel-copy-code').addEventListener('click', copyDuelCode);
+  $('duel-send-challenge').addEventListener('click', sendDuelChallenge);
+  $('duel-cancel-wait').addEventListener('click', cancelDuelWait);
+  $('duel-accept-btn').addEventListener('click', acceptIncomingDuel);
+  $('duel-decline-btn').addEventListener('click', declineIncomingDuel);
+  $('btn-duel-result-continue').addEventListener('click', closeDuelResultAndContinue);
+  $('duel-code-input').addEventListener('input', function(){
+    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  });
   function bindHold(id, key){
     var el = $(id);
     var set = function(v){ return function(ev){ ev.preventDefault(); leagueKeys[key]=v; }; };
@@ -6791,6 +7244,7 @@ function init(){
   state.isAdmin = isAdminUnlocked();
   updateAdminUI();
   tryLockLandscape();
+  startDuelPolling();
 }
 
 document.addEventListener('DOMContentLoaded', init);
