@@ -116,6 +116,14 @@ export class MatchRoom {
 
     this.sockets.set(playerId, server);
 
+    // let everyone already in the room know a new peer just joined —
+    // used by the 1×1 duel flow so the challenger (who connects and waits
+    // first) knows the instant their friend accepts and connects too.
+    for (const [pid, sock] of this.sockets) {
+      if (pid === playerId) continue;
+      try { sock.send(JSON.stringify({ type: 'peer-joined', id: playerId })); } catch (err) {}
+    }
+
     server.addEventListener('message', (evt) => {
       let payload;
       try {
@@ -150,9 +158,72 @@ export class MatchRoom {
   }
 }
 
+export class PlayerBox {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const method = request.method;
+
+    if (method === 'GET') {
+      const pending = (await this.state.storage.get('pending')) || null;
+      // a challenge older than 2 minutes is considered stale/expired —
+      // whoever sent it should assume it was missed and can retry.
+      if (pending && Date.now() - pending.ts > 120000) {
+        await this.state.storage.delete('pending');
+        return json({ pending: null });
+      }
+      return json({ pending });
+    }
+
+    if (method === 'POST' && url.pathname.endsWith('/clear')) {
+      await this.state.storage.delete('pending');
+      return json({ ok: true });
+    }
+
+    if (method === 'POST') {
+      let body;
+      try { body = await request.json(); } catch (err) { return json({ error: 'invalid body' }, 400); }
+      const challenge = {
+        from: String(body.from || '').slice(0, 40),
+        fromName: String(body.fromName || 'لاعب').slice(0, 24),
+        fromCls: String(body.fromCls || 'warrior').slice(0, 16),
+        matchId: String(body.matchId || '').slice(0, 40),
+        ts: Date.now(),
+      };
+      if (!challenge.from || !challenge.matchId) return json({ error: 'missing fields' }, 400);
+      await this.state.storage.put('pending', challenge);
+      return json({ ok: true });
+    }
+
+    return json({ error: 'method not allowed' }, 405);
+  }
+}
+
+function json(obj, status) {
+  return new Response(JSON.stringify(obj), {
+    status: status || 200,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' },
+  });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET,POST,OPTIONS',
+          'access-control-allow-headers': 'content-type',
+        },
+      });
+    }
 
     if (url.pathname === '/queue') {
       const id = env.LOBBY.idFromName('global-lobby');
@@ -168,8 +239,17 @@ export default {
       return stub.fetch(request);
     }
 
+    // friend-challenge mailbox: /box/{friendCode} and /box/{friendCode}/clear
+    if (url.pathname.startsWith('/box/')) {
+      const code = url.pathname.slice('/box/'.length).split('/')[0];
+      if (!code) return json({ error: 'code ناقص' }, 400);
+      const id = env.PLAYERBOX.idFromName(code.toUpperCase());
+      const stub = env.PLAYERBOX.get(id);
+      return stub.fetch(request);
+    }
+
     return new Response(
-      'سيرفر ملتيبلاير سيف الأساطير شغال ✅ — استخدم /queue للمطابقة أو /room/{id} للاتصال بغرفة.',
+      'سيرفر ملتيبلاير سيف الأساطير شغال ✅ — استخدم /queue للمطابقة، /room/{id} للاتصال بغرفة، أو /box/{code} لصندوق تحديات الأصدقاء.',
       { status: 200, headers: { 'content-type': 'text/plain; charset=utf-8' } }
     );
   },
