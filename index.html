@@ -911,6 +911,39 @@ input{font-family:inherit;}
   100%{transform:translateX(0);filter:brightness(1);}
 }
 
+/* ============================================================
+   حركة الأطراف الحقيقية — مش الشكل بيتحرك وبس، الإيدين والرجلين
+   بتتحرك فعليًا. كل طرف (رجل أمامية/خلفية، دراع حرة/سلاح) اتلف في
+   <g> منفصلة بمحور دوران عند المفصل (الورك/الكتف) داخل heroSVG، وهنا
+   بنشغّل عليها keyframes حقيقية: مشية متبادلة وقت التحرك بالجويستيك،
+   وتنفّس/تمايل خفيف وقت الوقوف عشان الشخصية متبقاش صنم ثابت حتى وهي واقفة. */
+#hero-sprite .hsvg-leg-fwd, #hero-sprite .hsvg-leg-back,
+#hero-sprite .hsvg-arm-off, #hero-sprite .hsvg-arm-weapon{
+  transition:transform .1s ease;
+}
+#hero-sprite.walking .hsvg-leg-fwd{ animation:heroWalkLegFwd .46s ease-in-out infinite; }
+#hero-sprite.walking .hsvg-leg-back{ animation:heroWalkLegBack .46s ease-in-out infinite; }
+#hero-sprite.walking .hsvg-arm-off{ animation:heroWalkArmOff .46s ease-in-out infinite; }
+#hero-sprite.walking .hsvg-arm-weapon{ animation:heroWalkArmWeapon .46s ease-in-out infinite; }
+@keyframes heroWalkLegFwd{ 0%,100%{transform:rotate(22deg);} 50%{transform:rotate(-22deg);} }
+@keyframes heroWalkLegBack{ 0%,100%{transform:rotate(-22deg);} 50%{transform:rotate(22deg);} }
+@keyframes heroWalkArmOff{ 0%,100%{transform:rotate(-26deg);} 50%{transform:rotate(26deg);} }
+@keyframes heroWalkArmWeapon{ 0%,100%{transform:rotate(18deg);} 50%{transform:rotate(-14deg);} }
+
+#hero-sprite:not(.walking) .hsvg-leg-fwd,
+#hero-sprite:not(.walking) .hsvg-leg-back{ animation:heroIdleLegSway 2.6s ease-in-out infinite; }
+#hero-sprite:not(.walking) .hsvg-arm-off{ animation:heroIdleArmSway 2.6s ease-in-out infinite; }
+#hero-sprite:not(.walking) .hsvg-arm-weapon{ animation:heroIdleArmSway2 2.6s ease-in-out infinite; }
+@keyframes heroIdleLegSway{ 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(2.5deg);} }
+@keyframes heroIdleArmSway{ 0%,100%{transform:rotate(-4deg);} 50%{transform:rotate(4deg);} }
+@keyframes heroIdleArmSway2{ 0%,100%{transform:rotate(3deg);} 50%{transform:rotate(-3deg);} }
+
+/* أثناء الهجوم: دراع السلاح بتضرب فعليًا مع حركة الاندفاع الموجودة أصلاً */
+.hero-sprite.attacking .hsvg-arm-weapon{ animation:heroAttackSwing .28s ease; }
+.hero-sprite.heavy-attacking .hsvg-arm-weapon{ animation:heroAttackSwingHeavy .38s ease; }
+@keyframes heroAttackSwing{ 0%{transform:rotate(0deg);} 45%{transform:rotate(-52deg);} 100%{transform:rotate(0deg);} }
+@keyframes heroAttackSwingHeavy{ 0%{transform:rotate(0deg);} 50%{transform:rotate(-78deg) scale(1.05);} 100%{transform:rotate(0deg);} }
+
 .battle-log{
   position:absolute; left:10px; right:10px; z-index:19;
   bottom:calc(172px + env(safe-area-inset-bottom,0px));
@@ -2538,11 +2571,15 @@ function svgLimb(d, wOut, wFill, color){
          '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+wFill+'" stroke-linecap="round"/>';
 }
 
-function heroSVG(cls, rarity){
+function heroSVG(cls, rarity, pose){
   var pal = CLASS_PALETTE[cls] || CLASS_PALETTE.warrior;
   var aura = RARITY_COLORS[rarity] || RARITY_COLORS.common;
   var uid = 'h'+(svgUidCounter++);
   var INK = '#181014'; // خط الحبر الأسود الغامق (anime outline)
+  // زوايا دوران الأطراف لأطر المشي (تُستخدم في رسم الكانفاس في مود 5×5
+  // حيث مفيش CSS ممكن تشتغل — في شاشة DOM العادية بتفضل صفر وحركة المشي
+  // بتتعمل بـCSS animation حية على نفس الـ<g> دول، شوف .hero-sprite.walking تحت)
+  pose = pose || {legFwd:0, legBack:0, armOff:0, armWeapon:0};
 
   var helmet = '', weapon = '', pauldrons = '', chestEmblem = '', hairSpikes = '';
 
@@ -2688,20 +2725,28 @@ function heroSVG(cls, rarity){
      فعلاً بطل بجري ويتحرك، مش أيقونة ثابتة ---- */
   var legs =
     '<path d="M35 86 Q50 94 65 86 L64 100 Q50 105 36 100 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+ // حزام/حوض
-    svgLimb('M58 92 Q65 106 64 120 Q63 130 60 138', 15, 11.5, pal.primary)+  // الرجل الخلفية
-    '<ellipse cx="59" cy="140" rx="7" ry="4.4" fill="'+INK+'"/>'+
-    '<ellipse cx="60" cy="139" rx="6" ry="3.4" fill="#2a1d14" stroke="'+INK+'" stroke-width="1.4"/>'+ // حذاء خلفي
-    svgLimb('M42 90 Q35 108 37 122 Q38 132 40 140', 16, 12.5, pal.primary)+  // الرجل الأمامية
-    '<ellipse cx="40" cy="142" rx="7.6" ry="4.8" fill="'+INK+'"/>'+
-    '<ellipse cx="39" cy="141" rx="6.6" ry="3.8" fill="#2a1d14" stroke="'+INK+'" stroke-width="1.4"/>';  // حذاء أمامي
+    '<g class="hsvg-leg-back" style="transform-origin:58px 92px" transform="rotate('+pose.legBack+' 58 92)">'+
+      svgLimb('M58 92 Q65 106 64 120 Q63 130 60 138', 15, 11.5, pal.primary)+  // الرجل الخلفية
+      '<ellipse cx="59" cy="140" rx="7" ry="4.4" fill="'+INK+'"/>'+
+      '<ellipse cx="60" cy="139" rx="6" ry="3.4" fill="#2a1d14" stroke="'+INK+'" stroke-width="1.4"/>'+ // حذاء خلفي
+    '</g>'+
+    '<g class="hsvg-leg-fwd" style="transform-origin:42px 90px" transform="rotate('+pose.legFwd+' 42 90)">'+
+      svgLimb('M42 90 Q35 108 37 122 Q38 132 40 140', 16, 12.5, pal.primary)+  // الرجل الأمامية
+      '<ellipse cx="40" cy="142" rx="7.6" ry="4.8" fill="'+INK+'"/>'+
+      '<ellipse cx="39" cy="141" rx="6.6" ry="3.8" fill="#2a1d14" stroke="'+INK+'" stroke-width="1.4"/>'+  // حذاء أمامي
+    '</g>';
 
   var arms =
-    svgLimb('M31 52 Q22 66 25 82 Q26 88 28 92', 14, 10.5, pal.secondary)+  // الدراع الحرة (يسار)
-    '<circle cx="28" cy="93" r="4.6" fill="'+INK+'"/>'+
-    '<circle cx="28" cy="92.5" r="3.8" fill="'+pal.skin+'" stroke="'+INK+'" stroke-width="1.2"/>'+
-    svgLimb('M69 52 Q79 49 78 36 Q77.5 30 77 26', 14, 10.5, pal.secondary)+  // دراع السلاح (يمين)
-    '<circle cx="77" cy="25" r="5" fill="'+INK+'"/>'+
-    '<circle cx="77" cy="24.5" r="4.2" fill="'+pal.skin+'" stroke="'+INK+'" stroke-width="1.2"/>';
+    '<g class="hsvg-arm-off" style="transform-origin:31px 52px" transform="rotate('+pose.armOff+' 31 52)">'+
+      svgLimb('M31 52 Q22 66 25 82 Q26 88 28 92', 14, 10.5, pal.secondary)+  // الدراع الحرة (يسار)
+      '<circle cx="28" cy="93" r="4.6" fill="'+INK+'"/>'+
+      '<circle cx="28" cy="92.5" r="3.8" fill="'+pal.skin+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '</g>'+
+    '<g class="hsvg-arm-weapon" style="transform-origin:69px 52px" transform="rotate('+pose.armWeapon+' 69 52)">'+
+      svgLimb('M69 52 Q79 49 78 36 Q77.5 30 77 26', 14, 10.5, pal.secondary)+  // دراع السلاح (يمين)
+      '<circle cx="77" cy="25" r="5" fill="'+INK+'"/>'+
+      '<circle cx="77" cy="24.5" r="4.2" fill="'+pal.skin+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+    '</g>';
 
   return '<svg viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">'+
     '<defs>'+
@@ -4130,10 +4175,14 @@ function arenaLoop(ts){
   arena.lastTs = ts;
   var b = state.battle;
   var speed = 0.55; // fraction of arena per second, hero
+  var heroEl = $('hero-sprite');
   if((arena.joyDX!==0 || arena.joyDY!==0) && !b.locked){
     arena.heroX = clamp(arena.heroX + arena.joyDX*speed*dt, 0.04, 0.72);
     arena.heroY = clamp(arena.heroY + arena.joyDY*speed*dt, 0.12, 0.88);
     positionHeroSprite();
+    if(heroEl) heroEl.classList.add('walking');
+  } else if(heroEl){
+    heroEl.classList.remove('walking');
   }
 
   // enemy AI: chase the hero's live position
@@ -6308,6 +6357,42 @@ function getLeagueHeroSprite(cls, rarity){
   return null;
 }
 
+/* ============================================================
+   إطارات المشي لمود 5×5 — الكانفاس مش بيشغّل CSS animations زي
+   شاشة DOM العادية، فعشان الإيدين والرجلين تتحرك فعليًا هنا لازم
+   نرسم أكتر من "إطار" مسبق (زي شريط صور متحركة كلاسيكي في الألعاب
+   ثنائية الأبعاد) ونتنقل بينهم حسب حركة الوحدة الفعلية، بدل صورة
+   واحدة ثابتة بتتحرك مكانها بس. */
+var LEAGUE_WALK_FRAMES = 8;
+var leagueHeroWalkFrameCache = {};
+function getLeagueHeroWalkFrame(cls, rarity, frameIdx){
+  var key = cls+'|'+(rarity||'epic')+'|'+frameIdx;
+  var entry = leagueHeroWalkFrameCache[key];
+  if(entry) return entry.loaded ? entry.img : null;
+  var phase = (frameIdx/LEAGUE_WALK_FRAMES) * Math.PI*2;
+  var swing = Math.sin(phase);
+  var pose = { legFwd: swing*22, legBack: -swing*22, armOff: -swing*26, armWeapon: swing*18 };
+  var svg = heroSVG(cls, rarity||'epic', pose);
+  var img = new Image();
+  entry = { img:img, loaded:false };
+  leagueHeroWalkFrameCache[key] = entry;
+  try{
+    img.onload = function(){ entry.loaded = true; };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  }catch(err){ /* falls back to the static idle sprite below if encoding fails */ }
+  return null;
+}
+function getLeagueHeroFrame(u, rarity){
+  if(u.moving && !u.ko){
+    var frameIdx = Math.floor(((u.bob % (Math.PI*2)) / (Math.PI*2)) * LEAGUE_WALK_FRAMES) % LEAGUE_WALK_FRAMES;
+    var walkImg = getLeagueHeroWalkFrame(u.cls, rarity, frameIdx);
+    if(walkImg) return walkImg;
+    // walk frame for this exact pose not loaded yet this instant — fall through to the
+    // static idle sprite for one frame rather than flicker/skip the draw entirely
+  }
+  return getLeagueHeroSprite(u.cls, rarity);
+}
+
 function leagueDrawUnitBody(ctx, u, T, scale){
   var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
   ctx.save();
@@ -6330,8 +6415,11 @@ function leagueDrawUnitBody(ctx, u, T, scale){
     // the exact hero-showcase portrait artwork, mirrored to face the enemy side.
     // heroSVG's viewBox is 100x150 (a real standing figure with legs, not a
     // square bust) — the draw target must keep that 2:3 ratio or the whole
-    // body gets squished back into a flat square.
-    var sprite = getLeagueHeroSprite(u.cls, u.controlled==='me' ? 'legendary' : 'epic');
+    // body gets squished back into a flat square. getLeagueHeroFrame picks a
+    // real walk-cycle pose (arms/legs actually swinging) while the unit is
+    // moving, and the static idle pose otherwise.
+    var rarityForSprite = u.controlled==='me' ? 'legendary' : 'epic';
+    var sprite = getLeagueHeroFrame(u, rarityForSprite);
     var spriteW = r*2.35, spriteH = spriteW*1.5;
     if(sprite){
       ctx.save();
