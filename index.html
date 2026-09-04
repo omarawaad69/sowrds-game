@@ -671,6 +671,41 @@ input{font-family:inherit;}
   100%{transform:translate(-50%,-50%) scale(1.35);opacity:0;}
 }
 
+/* ---- elemental spark particles: colored per skill, fly outward + fade ---- */
+.spark-particle{
+  position:absolute;width:5px;height:5px;border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:8;
+  animation:sparkFly .5s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes sparkFly{
+  0%{transform:translate(-50%,-50%) translate(0,0) scale(1.1);opacity:1;}
+  100%{transform:translate(-50%,-50%) translate(var(--sx),var(--sy)) scale(0.2);opacity:0;}
+}
+/* ---- healing burst: expanding ring + rising motes ---- */
+.heal-ring{
+  position:absolute;width:70px;height:70px;border-radius:50%;
+  transform:translate(-50%,-50%) scale(0.3);pointer-events:none;z-index:7;
+  border:2.5px solid rgba(143,240,200,0.9);
+  box-shadow:0 0 14px rgba(143,240,200,0.6) inset;
+  animation:healRingOut .65s ease forwards;
+}
+@keyframes healRingOut{
+  0%{transform:translate(-50%,-50%) scale(0.25);opacity:1;}
+  100%{transform:translate(-50%,-50%) scale(1.5);opacity:0;}
+}
+.heal-mote{
+  position:absolute;width:6px;height:6px;border-radius:50%;
+  background:radial-gradient(circle, #eafff2, #6bffb0);
+  box-shadow:0 0 8px rgba(107,255,176,0.9);
+  pointer-events:none;z-index:8;
+  animation:healMoteRise 1.05s ease-out forwards;
+}
+@keyframes healMoteRise{
+  0%{transform:translate(-50%,-50%) translateY(0) scale(1);opacity:0;}
+  20%{opacity:1;}
+  100%{transform:translate(-50%,-50%) translateY(-58px) scale(0.4);opacity:0;}
+}
+
 /* ---- mythic gear aura (character-level, not just icon ring) ---- */
 .hero-sprite-wrap.mythic-aura,
 .player-sprite.mythic-aura{ position:absolute; }
@@ -732,7 +767,7 @@ input{font-family:inherit;}
 /* hero: free-roaming sprite, positioned via left/top from joystick */
 .hero-sprite-wrap{
   position:absolute; left:14%; top:50%; z-index:4;
-  width:72px;height:72px; margin-left:-36px; margin-top:-36px;
+  width:150px;height:150px; margin-left:-75px; margin-top:-75px;
   transition:left .05s linear, top .05s linear;
 }
 .hero-sprite{width:100%;height:100%;filter:drop-shadow(0 8px 14px rgba(0,0,0,0.55));}
@@ -857,7 +892,8 @@ input{font-family:inherit;}
 /* ---- traveling skill projectile ---- */
 .skill-projectile{
   position:absolute;font-size:22px;left:0;top:0;transform:translate(-50%,-50%);
-  animation:projFly .38s ease forwards;filter:drop-shadow(0 0 8px rgba(169,143,232,0.85));
+  animation:projFly .38s ease forwards;
+  filter:drop-shadow(0 0 10px var(--glow, rgba(169,143,232,0.85))) drop-shadow(0 0 4px #fff);
   z-index:6;pointer-events:none;
 }
 @keyframes projFly{
@@ -954,9 +990,20 @@ input{font-family:inherit;}
 .hero-sprite.ultimate-cast{animation:heroUltCast .9s ease;}
 @keyframes heroUltCast{
   0%{transform:scale(1);filter:brightness(1);}
-  30%{transform:scale(1.25);filter:brightness(1.8) drop-shadow(0 0 20px rgba(255,196,80,0.9));}
-  60%{transform:scale(1.1);filter:brightness(1.4) drop-shadow(0 0 14px rgba(255,196,80,0.7));}
+  30%{transform:scale(1.25);filter:brightness(1.8) drop-shadow(0 0 20px var(--ult-glow, rgba(255,196,80,0.9)));}
+  60%{transform:scale(1.1);filter:brightness(1.4) drop-shadow(0 0 14px var(--ult-glow, rgba(255,196,80,0.7)));}
   100%{transform:scale(1);filter:brightness(1);}
+}
+/* ---- expanding shockwave rings for ultimate casts ---- */
+.ult-shock-ring{
+  position:absolute;width:40px;height:40px;border-radius:50%;
+  border:3px solid #ffe08a;transform:translate(-50%,-50%) scale(0.4);
+  pointer-events:none;z-index:8;
+  animation:ultShockOut .6s ease-out forwards;
+}
+@keyframes ultShockOut{
+  0%{transform:translate(-50%,-50%) scale(0.3);opacity:0.95;}
+  100%{transform:translate(-50%,-50%) scale(5.5);opacity:0;}
 }
 .back-row{display:flex;}
 .back-row .btn{flex:1;}
@@ -2141,7 +2188,17 @@ var CLASSES = {
     desc:'سريع ودقيق، متوازن بين الهجوم والسرعة العالية والمهارات الخاصة.',
     base:{hp:72,mp:32,atk:11,def:7,mag:5,spd:13},
     growth:{hp:10.5,mp:4.2,atk:2.6,def:1.6,mag:0.8,spd:1.7},
-    skills:['double_shot','poison_arrow','phantom_barrage'] }
+    skills:['double_shot','poison_arrow','phantom_barrage'] },
+  assassin:{ name:'قاتل الظل', icon:'🗡️',
+    desc:'مقاتل خفي يضرب من الظلال بسرعة خاطفة، ضعيف الدفاع لكنه الأسرع والأخطر في الاشتباك القريب.',
+    base:{hp:64,mp:34,atk:15,def:5,mag:2,spd:17},
+    growth:{hp:9,mp:4.6,atk:3.3,def:1.1,mag:0.3,spd:2.1},
+    skills:['shadow_stab','smoke_veil','thousand_cuts'] },
+  paladin:{ name:'فارس مقدس', icon:'🛡️',
+    desc:'حارس نوراني يجمع بين درع ثقيل وقوة سحرية شافية، يصمد طويلاً ويعالج نفسه في قلب المعركة.',
+    base:{hp:104,mp:42,atk:10,def:13,mag:9,spd:5},
+    growth:{hp:16,mp:5.6,atk:2.1,def:2.8,mag:1.9,spd:0.7},
+    skills:['holy_smite','guardian_light','divine_judgment'] }
 };
 
 var SKILLS = {
@@ -2151,13 +2208,21 @@ var SKILLS = {
   ice_lance:   { name:'رمح الجليد', cost:14, kind:'magic', power:1.7, freeze:0.35, icon:'ice', desc:'رمح جليدي قد يجمد العدو جولة كاملة' },
   double_shot: { name:'سهم مزدوج', cost:9, kind:'physical', power:1.05, hits:2, icon:'doubleshot', desc:'سهمان متتاليان سريعان' },
   poison_arrow:{ name:'سهم سام', cost:11, kind:'physical', power:1.2, poison:true, icon:'poison', desc:'سهم مسموم يستنزف صحة العدو 3 جولات' },
+  shadow_stab:  { name:'طعنة الظل', cost:9, kind:'physical', power:1.65, bleed:true, icon:'shadowstab', desc:'طعنة خاطفة من الظلال تفتح جرحاً ينزف 3 جولات' },
+  smoke_veil:   { name:'حجاب الدخان', cost:13, kind:'buff', icon:'smokeveil', desc:'تختفي في سحابة دخان وترفع قوة ضرباتك 30% لثلاث جولات' },
+  holy_smite:   { name:'صاعقة مقدسة', cost:12, kind:'magic', power:1.9, icon:'holysmite', desc:'عمود نور ساطع يضرب العدو بقوة مقدسة خالصة' },
+  guardian_light:{ name:'نور الحارس', cost:15, kind:'heal', heal:0.32, icon:'guardlight', desc:'ضوء شافٍ يستعيد 32% من صحتك القصوى فوراً' },
   /* ---- ULTIMATE SKILLS: one devastating signature move per class ---- */
   titan_smash: { name:'سحق التيتان', cost:32, kind:'physical', power:3.6, icon:'ultimate_warrior', ultimate:true,
                  desc:'ضربة أسطورية تهز أرض المعركة وتحطم دفاعات العدو' },
   arcane_apocalypse:{ name:'نهاية العصر السحري', cost:44, kind:'magic', power:4.2, icon:'ultimate_mage', ultimate:true,
                  desc:'انفجار سحري كوني يستدعي الدمار الخالص على العدو' },
   phantom_barrage:{ name:'وابل الشبح', cost:30, kind:'physical', power:1.35, hits:5, icon:'ultimate_archer', ultimate:true,
-                 desc:'خمسة سهام خاطفة كالبرق تخترق أي دفاع' }
+                 desc:'خمسة سهام خاطفة كالبرق تخترق أي دفاع' },
+  thousand_cuts:{ name:'ألف طعنة', cost:34, kind:'physical', power:1.15, hits:7, icon:'ultimate_assassin', ultimate:true,
+                 desc:'وابل خاطف من سبع طعنات يمزق العدو من كل الجهات في لمح البصر' },
+  divine_judgment:{ name:'الحكم الإلهي', cost:42, kind:'magic', power:3.9, icon:'ultimate_paladin', ultimate:true,
+                 desc:'عمود نور إلهي هائل ينزل من السماء ليطهر ساحة المعركة بالكامل' }
 };
 
 var ITEMS = {
@@ -2239,7 +2304,9 @@ var BLOCKED = { '#':1, '~':1, '^':1 };
 var CLASS_PALETTE = {
   warrior:{ primary:'#c9432f', secondary:'#5c1a12', metal:'#d8d8e2', skin:'#e8c39e' },
   mage:   { primary:'#5a3fd6', secondary:'#221448', metal:'#8a6fd6', skin:'#e8c39e' },
-  archer: { primary:'#1f8a5c', secondary:'#0d3322', metal:'#3fe0d0', skin:'#e8c39e' }
+  archer: { primary:'#1f8a5c', secondary:'#0d3322', metal:'#3fe0d0', skin:'#e8c39e' },
+  assassin:{ primary:'#3a1f52', secondary:'#0c0616', metal:'#c85cff', skin:'#d9ac82' },
+  paladin: { primary:'#d6b23f', secondary:'#4a3a10', metal:'#fff4d6', skin:'#e8c39e' }
 };
 var svgUidCounter = 0;
 function getEquippedRarity(p){
@@ -2255,100 +2322,173 @@ function getEquippedRarity(p){
   return RARITY_ORDER[best];
 }
 /* ============================================================
-   HERO PORTRAIT (SVG) — high-detail in-game character graphics.
-   Each class gets a distinct silhouette: ornate horned/crested
-   helmet, layered pauldrons with rivets, a flowing multi-tone
-   cape, glowing rune accents and a proper ground-contact glow —
-   built to read as a premium "hero reveal" portrait, not just a
-   battle icon.
+   HERO PORTRAIT (SVG) — anime/manga-style character art.
+   Bigger head-to-body proportions, bold black cel-shading
+   outlines on every shape, large expressive eyes with a
+   colored iris + glint, and spiky manga-style hair peeking
+   from under each class' helmet — built to read as a proper
+   character illustration at any size (battle sprite, HUD icon,
+   character-sheet portrait), not just a small silhouette.
    ============================================================ */
 function heroSVG(cls, rarity){
   var pal = CLASS_PALETTE[cls] || CLASS_PALETTE.warrior;
   var aura = RARITY_COLORS[rarity] || RARITY_COLORS.common;
   var uid = 'h'+(svgUidCounter++);
+  var INK = '#181014'; // خط الحبر الأسود الغامق (anime outline)
 
-  var helmet = '', weapon = '', pauldrons = '', chestEmblem = '';
+  var helmet = '', weapon = '', pauldrons = '', chestEmblem = '', hairSpikes = '';
 
   if(cls==='mage'){
+    hairSpikes =
+      '<path d="M33 22 Q30 10 38 6 Q36 14 40 18 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<path d="M67 22 Q70 10 62 6 Q64 14 60 18 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>';
     helmet =
-      '<path d="M35 24 Q50 4 65 24 Q65 15 58 10 Q50 3 42 10 Q35 15 35 24 Z" fill="url(#hood'+uid+')"/>'+
-      '<path d="M35 24 Q42 14 50 12 Q44 18 40 25 Z" fill="#fff" opacity="0.12"/>'+
-      '<circle cx="50" cy="11" r="2.6" fill="'+aura+'"/>'+
-      '<circle cx="50" cy="11" r="5.2" fill="'+aura+'" opacity="0.35"/>';
+      '<path d="M32 26 Q48 2 68 26 Q68 14 58 8 Q50 1 42 8 Q32 14 32 26 Z" fill="url(#hood'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<path d="M36 24 Q44 12 50 10 Q42 18 38 26 Z" fill="#fff" opacity="0.2"/>'+
+      '<circle cx="50" cy="9" r="3" fill="'+aura+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+      '<circle cx="50" cy="9" r="6.4" fill="'+aura+'" opacity="0.35"/>';
     weapon =
-      '<rect x="68.4" y="4" width="3.2" height="56" rx="1.6" fill="#3a2814"/>'+
-      '<rect x="68.4" y="4" width="3.2" height="56" rx="1.6" fill="url(#staffshine'+uid+')" opacity="0.5"/>'+
-      '<path d="M64 8 L70 -2 L76 8 Z" fill="'+pal.metal+'" opacity="0.9"/>'+
-      '<circle cx="70" cy="4" r="8" fill="'+aura+'" opacity="0.95"/>'+
-      '<circle cx="70" cy="4" r="13" fill="'+aura+'" opacity="0.3"/>'+
-      '<circle cx="70" cy="4" r="3.2" fill="#fff" opacity="0.9"/>';
+      '<rect x="74" y="-4" width="4" height="68" rx="2" fill="#3a2814" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<rect x="74" y="-4" width="4" height="68" rx="2" fill="url(#staffshine'+uid+')" opacity="0.5"/>'+
+      '<path d="M69 1 L76 -11 L83 1 Z" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.4"/>'+
+      '<circle cx="76" cy="-4" r="9.5" fill="'+aura+'" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<circle cx="76" cy="-4" r="15" fill="'+aura+'" opacity="0.3"/>'+
+      '<circle cx="76" cy="-4" r="3.6" fill="#fff" opacity="0.95"/>';
     pauldrons =
-      '<path d="M33 51 Q29 44 36 41 Q42 44 40 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
-      '<path d="M67 51 Q71 44 64 41 Q58 44 60 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>';
-    chestEmblem = '<circle cx="50" cy="60" r="4.5" fill="none" stroke="'+aura+'" stroke-width="1.3" opacity="0.85"/>'+
-      '<circle cx="50" cy="60" r="1.6" fill="'+aura+'"/>';
-  } else if(cls==='archer'){
+      '<path d="M29 54 Q24 45 33 41 Q41 45 38 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>'+
+      '<path d="M71 54 Q76 45 67 41 Q59 45 62 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>';
+    chestEmblem = '<circle cx="50" cy="64" r="5.4" fill="none" stroke="'+aura+'" stroke-width="1.6" opacity="0.9"/>'+
+      '<circle cx="50" cy="64" r="1.9" fill="'+aura+'"/>';
+  } else if(cls==='assassin'){
+    hairSpikes =
+      '<path d="M32 22 Q27 8 36 2 Q35 12 41 17 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<path d="M68 22 Q73 8 64 2 Q65 12 59 17 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>';
     helmet =
-      '<path d="M35 26 Q38 12 50 10 Q62 12 65 26 Q58 18 50 17 Q42 18 35 26 Z" fill="url(#hood'+uid+')"/>'+
-      '<path d="M45 12 L42 2 M55 12 L58 2" stroke="'+pal.metal+'" stroke-width="1.6" stroke-linecap="round"/>'+
-      '<circle cx="42" cy="2" r="1.6" fill="'+aura+'"/><circle cx="58" cy="2" r="1.6" fill="'+aura+'"/>';
-    weapon =
-      '<path d="M76 8 Q94 36 76 64" stroke="'+pal.metal+'" stroke-width="3.2" fill="none" stroke-linecap="round"/>'+
-      '<path d="M76 8 Q94 36 76 64" stroke="#fff" stroke-width="1" fill="none" opacity="0.4"/>'+
-      '<line x1="76" y1="8" x2="76" y2="64" stroke="#e8e0cc" stroke-width="1.1"/>'+
-      '<path d="M76 34 L86 34" stroke="#e8e0cc" stroke-width="1" opacity="0.75"/>'+
-      '<path d="M76 34 L67 30 L70 34 L67 38 Z" fill="'+pal.metal+'"/>';
+      /* low hood wrapping the lower face, leaving only the eyes exposed */
+      '<path d="M30 46 Q28 20 50 16 Q72 20 70 46 Q70 30 50 26 Q30 30 30 46 Z" fill="url(#hood'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<path d="M33 44 Q34 30 46 25" stroke="#fff" stroke-width="1.4" opacity="0.18" fill="none"/>'+
+      '<path d="M31 27 Q26 30 27 38" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.85"/>'+
+      '<path d="M69 27 Q74 30 73 38" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.85"/>';
+    weapon = /* twin curved daggers, crossed behind the back */
+      '<g transform="translate(80,20) rotate(38)">'+
+        '<rect x="-2.6" y="-24" width="5.2" height="30" rx="2.4" fill="url(#blade'+uid+')" stroke="'+INK+'" stroke-width="1.6"/>'+
+        '<rect x="-4.6" y="4" width="9.2" height="8" rx="2.6" fill="#241522" stroke="'+INK+'" stroke-width="1.4"/>'+
+      '</g>'+
+      '<g transform="translate(80,54) rotate(-32)">'+
+        '<rect x="-2.6" y="-24" width="5.2" height="30" rx="2.4" fill="url(#blade'+uid+')" stroke="'+INK+'" stroke-width="1.6"/>'+
+        '<rect x="-4.6" y="4" width="9.2" height="8" rx="2.6" fill="#241522" stroke="'+INK+'" stroke-width="1.4"/>'+
+      '</g>'+
+      '<circle cx="80" cy="20" r="2.4" fill="'+aura+'" opacity="0.9"/>'+
+      '<circle cx="80" cy="54" r="2.4" fill="'+aura+'" opacity="0.9"/>';
     pauldrons =
-      '<path d="M32 51 Q27 45 35 40 Q43 44 41 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
-      '<path d="M68 51 Q73 45 65 40 Q57 44 59 52 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>';
-    chestEmblem = '<path d="M46 58 L50 63 L54 58" stroke="'+aura+'" stroke-width="1.3" fill="none" opacity="0.85"/>';
-  } else {
+      '<path d="M29 54 Q22 47 30 42 Q39 46 37 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>'+
+      '<path d="M71 54 Q78 47 70 42 Q61 46 63 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>';
+    chestEmblem = '<path d="M44 60 L50 68 L56 60 M44 68 L50 76 L56 68" stroke="'+aura+'" stroke-width="1.4" fill="none" opacity="0.85"/>';
+  } else if(cls==='paladin'){
+    hairSpikes = ''; /* fully enclosed helm — no hair visible */
     helmet =
-      '<path d="M34 26 Q34 10 50 8 Q66 10 66 26 Q66 16 58 13 Q50 10 42 13 Q34 16 34 26 Z" fill="url(#hood'+uid+')" stroke="'+pal.metal+'" stroke-width="1"/>'+
-      '<path d="M46 9 L44 -3 L48 6 M54 9 L56 -3 L52 6" fill="'+pal.metal+'" opacity="0.95"/>'+
-      '<path d="M34 22 Q30 24 30 30" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.8"/>'+
-      '<path d="M66 22 Q70 24 70 30" stroke="'+pal.metal+'" stroke-width="1.6" fill="none" opacity="0.8"/>';
-    weapon =
-      '<g transform="translate(70,32) rotate(22)">'+
-        '<rect x="-3.4" y="-30" width="6.8" height="48" rx="2.6" fill="url(#blade'+uid+')" stroke="#e8e2d0" stroke-width="0.6"/>'+
-        '<rect x="-1.1" y="-28" width="2.2" height="43" rx="1" fill="#fff" opacity="0.55"/>'+
-        '<path d="M-3.4 -30 L0 -36 L3.4 -30 Z" fill="#f4f0e2"/>'+
-        '<rect x="-10" y="-33.5" width="20" height="7" rx="2.4" fill="#4a3320" stroke="'+pal.metal+'" stroke-width="0.8"/>'+
-        '<rect x="-2.8" y="18" width="5.6" height="11" rx="2.2" fill="#3a2814"/>'+
-        '<circle cx="0" cy="30" r="3.4" fill="'+pal.metal+'"/>'+
+      /* closed holy helm with a raised golden halo-visor */
+      '<path d="M31 30 Q31 6 50 4 Q69 6 69 30 Q69 14 50 10 Q31 14 31 30 Z" fill="url(#hood'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<rect x="38" y="30" width="24" height="7" rx="3" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.4" opacity="0.92"/>'+
+      '<ellipse cx="50" cy="-3" rx="15" ry="4.4" fill="none" stroke="'+aura+'" stroke-width="2.2" opacity="0.85"/>'+
+      '<ellipse cx="50" cy="-3" rx="15" ry="4.4" fill="none" stroke="'+aura+'" stroke-width="6" opacity="0.22"/>'+
+      '<path d="M46 5 L50 -6 L54 5 Z" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.2"/>';
+    weapon = /* holy warhammer with a radiant head */
+      '<g transform="translate(78,30) rotate(14)">'+
+        '<rect x="-3.4" y="-8" width="6.8" height="58" rx="2.8" fill="#4a3a10" stroke="'+INK+'" stroke-width="1.8"/>'+
+        '<rect x="-13" y="-24" width="26" height="20" rx="4" fill="url(#blade'+uid+')" stroke="'+INK+'" stroke-width="2"/>'+
+        '<circle cx="0" cy="-14" r="5" fill="'+aura+'" opacity="0.9"/>'+
+        '<circle cx="0" cy="-14" r="10" fill="'+aura+'" opacity="0.28"/>'+
       '</g>';
     pauldrons =
-      '<path d="M31 51 Q25 43 36 38 Q46 43 43 53 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.2"/>'+
-      '<path d="M69 51 Q75 43 64 38 Q54 43 57 53 Z" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.2"/>'+
-      '<circle cx="35" cy="45" r="1.6" fill="'+pal.metal+'"/><circle cx="65" cy="45" r="1.6" fill="'+pal.metal+'"/>';
-    chestEmblem = '<path d="M50 55 L54 61 L50 67 L46 61 Z" fill="none" stroke="'+aura+'" stroke-width="1.3" opacity="0.85"/>';
+      '<path d="M26 55 Q17 44 33 38 Q48 44 43 57 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.4"/>'+
+      '<path d="M74 55 Q83 44 67 38 Q52 44 57 57 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.4"/>'+
+      '<circle cx="33" cy="47" r="2.4" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="0.8"/><circle cx="67" cy="47" r="2.4" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="0.8"/>';
+    chestEmblem = '<path d="M50 57 L54 63 L50 76 L46 63 Z" fill="none" stroke="'+aura+'" stroke-width="1.8" opacity="0.95"/>'+
+      '<path d="M43 65 L57 65" stroke="'+aura+'" stroke-width="1.6" opacity="0.9"/>';
+  } else if(cls==='archer'){
+    hairSpikes =
+      '<path d="M31 24 Q26 14 33 8 Q34 16 39 20 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<path d="M69 24 Q74 14 67 8 Q66 16 61 20 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>';
+    helmet =
+      '<path d="M32 28 Q36 10 50 8 Q64 10 68 28 Q59 18 50 17 Q41 18 32 28 Z" fill="url(#hood'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<path d="M44 10 L40 -3 M56 10 L60 -3" stroke="'+pal.metal+'" stroke-width="2" stroke-linecap="round"/>'+
+      '<circle cx="40" cy="-3" r="2" fill="'+aura+'" stroke="'+INK+'" stroke-width="1"/><circle cx="60" cy="-3" r="2" fill="'+aura+'" stroke="'+INK+'" stroke-width="1"/>';
+    weapon =
+      '<path d="M82 4 Q104 36 82 68" stroke="'+INK+'" stroke-width="7" fill="none" stroke-linecap="round"/>'+
+      '<path d="M82 4 Q104 36 82 68" stroke="'+pal.metal+'" stroke-width="4" fill="none" stroke-linecap="round"/>'+
+      '<path d="M82 4 Q104 36 82 68" stroke="#fff" stroke-width="1.2" fill="none" opacity="0.45"/>'+
+      '<line x1="82" y1="4" x2="82" y2="68" stroke="#e8e0cc" stroke-width="1.3"/>'+
+      '<path d="M82 36 L94 36" stroke="#e8e0cc" stroke-width="1.1" opacity="0.8"/>'+
+      '<path d="M82 36 L71 31 L75 36 L71 41 Z" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.2"/>';
+    pauldrons =
+      '<path d="M28 54 Q22 46 32 40 Q42 44 40 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>'+
+      '<path d="M72 54 Q78 46 68 40 Q58 44 60 55 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2"/>';
+    chestEmblem = '<path d="M45 61 L50 67 L55 61" stroke="'+aura+'" stroke-width="1.6" fill="none" opacity="0.9" stroke-linecap="round"/>';
+  } else {
+    hairSpikes =
+      '<path d="M30 24 Q24 12 32 4 Q35 14 42 18 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>'+
+      '<path d="M70 24 Q76 12 68 4 Q65 14 58 18 Z" fill="'+pal.secondary+'" stroke="'+INK+'" stroke-width="1.6"/>';
+    helmet =
+      '<path d="M31 28 Q31 8 50 6 Q69 8 69 28 Q69 16 59 12 Q50 9 41 12 Q31 16 31 28 Z" fill="url(#hood'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<path d="M45 7 L42 -8 L47 4 M55 7 L58 -8 L53 4" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.2"/>'+
+      '<path d="M31 23 Q26 25 26 32" stroke="'+pal.metal+'" stroke-width="2" fill="none" opacity="0.9"/>'+
+      '<path d="M69 23 Q74 25 74 32" stroke="'+pal.metal+'" stroke-width="2" fill="none" opacity="0.9"/>';
+    weapon =
+      '<g transform="translate(76,32) rotate(22)">'+
+        '<rect x="-4.2" y="-38" width="8.4" height="60" rx="3.2" fill="url(#blade'+uid+')" stroke="'+INK+'" stroke-width="2"/>'+
+        '<rect x="-1.4" y="-35" width="2.8" height="54" rx="1.2" fill="#fff" opacity="0.6"/>'+
+        '<path d="M-4.2 -38 L0 -46 L4.2 -38 Z" fill="#f4f0e2" stroke="'+INK+'" stroke-width="1.6"/>'+
+        '<rect x="-13" y="-42" width="26" height="9" rx="3" fill="#4a3320" stroke="'+INK+'" stroke-width="1.6"/>'+
+        '<rect x="-3.6" y="22" width="7.2" height="14" rx="2.8" fill="#3a2814" stroke="'+INK+'" stroke-width="1.4"/>'+
+        '<circle cx="0" cy="38" r="4.2" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="1.4"/>'+
+      '</g>';
+    pauldrons =
+      '<path d="M27 54 Q19 44 33 37 Q46 44 42 56 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<path d="M73 54 Q81 44 67 37 Q54 44 58 56 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.2"/>'+
+      '<circle cx="33" cy="47" r="2" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="0.8"/><circle cx="67" cy="47" r="2" fill="'+pal.metal+'" stroke="'+INK+'" stroke-width="0.8"/>';
+    chestEmblem = '<path d="M50 58 L55 65 L50 72 L45 65 Z" fill="none" stroke="'+aura+'" stroke-width="1.6" opacity="0.9"/>';
   }
 
-  var ring = rarity!=='common' ? '<circle cx="50" cy="50" r="46" fill="none" stroke="'+aura+'" stroke-width="2" opacity="0.75"/>'+
-             '<circle cx="50" cy="50" r="46" fill="none" stroke="'+aura+'" stroke-width="5" opacity="0.18"/>' : '';
+  var ring = rarity!=='common' ? '<circle cx="50" cy="52" r="49" fill="none" stroke="'+aura+'" stroke-width="2.4" opacity="0.8"/>'+
+             '<circle cx="50" cy="52" r="49" fill="none" stroke="'+aura+'" stroke-width="6" opacity="0.2"/>' : '';
   var mythicSparks = rarity==='mythic' || rarity==='legendary' ?
-    '<circle cx="22" cy="30" r="1.4" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>'+
-    '<circle cx="78" cy="38" r="1.2" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2.2s" begin="0.4s" repeatCount="indefinite"/></circle>'+
-    '<circle cx="26" cy="70" r="1.1" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.9s" repeatCount="indefinite"/></circle>' : '';
-  var cape = cls==='warrior' ? '<path d="M31 50 Q19 76 27 98 Q40 86 41 58 Z" fill="url(#cape'+uid+')" opacity="0.94"/>'+
-             '<path d="M31 50 Q19 76 27 98 Q40 86 41 58 Z" fill="none" stroke="'+aura+'" stroke-width="0.6" opacity="0.4"/>' :
-             '<path d="M34 49 Q24 74 31 98 Q42 84 41 56 Z" fill="url(#cape'+uid+')" opacity="0.88"/>';
-  var groundShadow = '<ellipse cx="50" cy="97" rx="23" ry="4.4" fill="#000" opacity="0.42"/>'+
-    '<ellipse cx="50" cy="97" rx="14" ry="2.4" fill="'+aura+'" opacity="0.28"/>';
+    '<circle cx="18" cy="30" r="1.7" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>'+
+    '<circle cx="82" cy="40" r="1.5" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2.2s" begin="0.4s" repeatCount="indefinite"/></circle>'+
+    '<circle cx="22" cy="76" r="1.3" fill="'+aura+'"><animate attributeName="opacity" values="0;1;0" dur="2s" begin="0.9s" repeatCount="indefinite"/></circle>' : '';
+  var cape = cls==='warrior' ? '<path d="M28 54 Q13 84 23 108 Q39 94 40 62 Z" fill="url(#cape'+uid+')" stroke="'+INK+'" stroke-width="1.6" opacity="0.96"/>' :
+             '<path d="M31 53 Q19 82 28 108 Q41 92 40 60 Z" fill="url(#cape'+uid+')" stroke="'+INK+'" stroke-width="1.4" opacity="0.92"/>';
+  var groundShadow = '<ellipse cx="50" cy="106" rx="26" ry="5" fill="#000" opacity="0.42"/>'+
+    '<ellipse cx="50" cy="106" rx="16" ry="2.8" fill="'+aura+'" opacity="0.28"/>';
 
-  return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
+  // ---- الوجه: عيون كبيرة معبّرة بأسلوب أنمي (iris ملون + لمعة + خط جفن غامق) ----
+  var eyeL =
+    '<path d="M40 39.5 Q44.5 35.5 49 39" stroke="'+INK+'" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+    '<path d="M40.5 39.5 Q44.5 45.5 48.5 40" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/>'+
+    '<circle cx="45.6" cy="41.2" r="3" fill="'+aura+'"/>'+
+    '<circle cx="45.6" cy="41.2" r="1.5" fill="'+INK+'"/>'+
+    '<circle cx="44.6" cy="40.1" r="0.9" fill="#fff"/>';
+  var eyeR =
+    '<path d="M60 39.5 Q55.5 35.5 51 39" stroke="'+INK+'" stroke-width="2" fill="none" stroke-linecap="round"/>'+
+    '<path d="M59.5 39.5 Q55.5 45.5 51.5 40" fill="#fff" stroke="'+INK+'" stroke-width="1.6"/>'+
+    '<circle cx="54.4" cy="41.2" r="3" fill="'+aura+'"/>'+
+    '<circle cx="54.4" cy="41.2" r="1.5" fill="'+INK+'"/>'+
+    '<circle cx="55.4" cy="40.1" r="0.9" fill="#fff"/>';
+
+  return '<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">'+
     '<defs>'+
-      '<radialGradient id="aura'+uid+'" cx="50%" cy="40%" r="65%">'+
-        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.55"/>'+
-        '<stop offset="60%" stop-color="'+aura+'" stop-opacity="0.12"/>'+
+      '<radialGradient id="aura'+uid+'" cx="50%" cy="38%" r="65%">'+
+        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.6"/>'+
+        '<stop offset="60%" stop-color="'+aura+'" stop-opacity="0.14"/>'+
         '<stop offset="100%" stop-color="'+aura+'" stop-opacity="0"/>'+
       '</radialGradient>'+
-      '<linearGradient id="body'+uid+'" x1="0" y1="0" x2="0.55" y2="1">'+
+      '<linearGradient id="body'+uid+'" x1="0" y1="0" x2="0.4" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.primary+'"/>'+
-        '<stop offset="55%" stop-color="'+pal.secondary+'"/>'+
-        '<stop offset="100%" stop-color="#050308"/>'+
+        '<stop offset="62%" stop-color="'+pal.primary+'"/>'+
+        '<stop offset="62.1%" stop-color="'+pal.secondary+'"/>'+
+        '<stop offset="100%" stop-color="'+pal.secondary+'"/>'+
       '</linearGradient>'+
-      '<linearGradient id="hood'+uid+'" x1="0" y1="0" x2="0.4" y2="1">'+
+      '<linearGradient id="hood'+uid+'" x1="0" y1="0" x2="0.3" y2="1">'+
         '<stop offset="0%" stop-color="'+pal.secondary+'"/>'+
         '<stop offset="100%" stop-color="#0a0710"/>'+
       '</linearGradient>'+
@@ -2366,46 +2506,45 @@ function heroSVG(cls, rarity){
         '<stop offset="0%" stop-color="#fff" stop-opacity="0.5"/>'+
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
       '</linearGradient>'+
-      '<radialGradient id="skinshade'+uid+'" cx="33%" cy="27%" r="72%">'+
-        '<stop offset="0%" stop-color="#fff" stop-opacity="0.42"/>'+
-        '<stop offset="45%" stop-color="#fff" stop-opacity="0.06"/>'+
-        '<stop offset="100%" stop-color="#000" stop-opacity="0.24"/>'+
+      '<radialGradient id="skinshade'+uid+'" cx="32%" cy="24%" r="75%">'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.45"/>'+
+        '<stop offset="50%" stop-color="#fff" stop-opacity="0.04"/>'+
+        '<stop offset="100%" stop-color="#000" stop-opacity="0.2"/>'+
       '</radialGradient>'+
       '<linearGradient id="rim'+uid+'" x1="0" y1="0" x2="1" y2="0">'+
-        '<stop offset="0%" stop-color="#fff" stop-opacity="0.6"/>'+
+        '<stop offset="0%" stop-color="#fff" stop-opacity="0.65"/>'+
         '<stop offset="16%" stop-color="#fff" stop-opacity="0"/>'+
         '<stop offset="100%" stop-color="#fff" stop-opacity="0"/>'+
       '</linearGradient>'+
       '<linearGradient id="rimR'+uid+'" x1="1" y1="0" x2="0" y2="0">'+
-        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.5"/>'+
+        '<stop offset="0%" stop-color="'+aura+'" stop-opacity="0.55"/>'+
         '<stop offset="20%" stop-color="'+aura+'" stop-opacity="0"/>'+
         '<stop offset="100%" stop-color="'+aura+'" stop-opacity="0"/>'+
       '</linearGradient>'+
     '</defs>'+
-    '<circle cx="50" cy="50" r="48" fill="url(#aura'+uid+')"/>'+
+    '<circle cx="50" cy="52" r="52" fill="url(#aura'+uid+')"/>'+
     groundShadow+
     cape+
     weapon+
-    '<path d="M27 95 Q50 56 73 95 Z" fill="url(#body'+uid+')"/>'+
-    '<path d="M27 95 Q50 56 73 95 L73 95 Q52 70 27 95 Z" fill="#000" opacity="0.18"/>'+
-    '<path d="M28.5 92 Q42 60 49 57" stroke="url(#rim'+uid+')" stroke-width="2.6" fill="none" opacity="0.92"/>'+
-    '<path d="M71.5 92 Q58 60 51 57" stroke="url(#rimR'+uid+')" stroke-width="2.2" fill="none" opacity="0.75"/>'+
+    '<path d="M24 104 Q50 60 76 104 Z" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.4"/>'+
+    '<path d="M24 104 Q50 60 76 104 L76 104 Q53 76 24 104 Z" fill="#000" opacity="0.2"/>'+
+    '<path d="M26 100 Q41 64 49 60" stroke="url(#rim'+uid+')" stroke-width="3" fill="none" opacity="0.95"/>'+
+    '<path d="M74 100 Q59 64 51 60" stroke="url(#rimR'+uid+')" stroke-width="2.6" fill="none" opacity="0.8"/>'+
     pauldrons+
-    '<rect x="36" y="49" width="28" height="30" rx="10" fill="url(#body'+uid+')" stroke="'+pal.metal+'" stroke-width="1.6"/>'+
-    '<rect x="36" y="49" width="13" height="30" rx="10" fill="#fff" opacity="0.1"/>'+
-    '<rect x="57" y="49" width="7" height="30" rx="6" fill="#000" opacity="0.2"/>'+
+    '<rect x="33" y="52" width="34" height="34" rx="12" fill="url(#body'+uid+')" stroke="'+INK+'" stroke-width="2.4"/>'+
+    '<rect x="33" y="52" width="16" height="34" rx="12" fill="#fff" opacity="0.1"/>'+
     chestEmblem+
-    '<circle cx="50" cy="36" r="15.8" fill="'+pal.skin+'"/>'+
-    '<circle cx="50" cy="36" r="15.8" fill="url(#skinshade'+uid+')"/>'+
-    '<ellipse cx="43.5" cy="29.5" rx="4.4" ry="3" fill="#fff" opacity="0.4"/>'+
+    hairSpikes+
+    '<circle cx="50" cy="39" r="19" fill="'+pal.skin+'" stroke="'+INK+'" stroke-width="2.4"/>'+
+    '<circle cx="50" cy="39" r="19" fill="url(#skinshade'+uid+')"/>'+
+    '<ellipse cx="42" cy="30" rx="5.2" ry="3.4" fill="#fff" opacity="0.45"/>'+
     helmet+
-    '<path d="M42.5 39 Q44 37.3 45.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
-    '<path d="M54.5 39 Q56 37.3 57.5 39" stroke="#241708" stroke-width="1.1" fill="none" stroke-linecap="round"/>'+
-    '<circle cx="44" cy="37.2" r="2.1" fill="#241708"/>'+
-    '<circle cx="56" cy="37.2" r="2.1" fill="#241708"/>'+
-    '<circle cx="44.6" cy="36.6" r="0.6" fill="#fff" opacity="0.85"/>'+
-    '<circle cx="56.6" cy="36.6" r="0.6" fill="#fff" opacity="0.85"/>'+
-    '<path d="M46 43.5 Q50 45.5 54 43.5" stroke="#5a3d24" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.55"/>'+
+    '<path d="M39 34 Q41 31.5 43.5 33.5" stroke="'+INK+'" stroke-width="1.6" fill="none" stroke-linecap="round"/>'+
+    '<path d="M56.5 33.5 Q59 31.5 61 34" stroke="'+INK+'" stroke-width="1.6" fill="none" stroke-linecap="round"/>'+
+    eyeL+eyeR+
+    '<path d="M47 48 Q50 50.4 53 48" stroke="#5a3d24" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.7"/>'+
+    '<ellipse cx="40" cy="45" rx="2.6" ry="1.6" fill="'+aura+'" opacity="0.25"/>'+
+    '<ellipse cx="60" cy="45" rx="2.6" ry="1.6" fill="'+aura+'" opacity="0.25"/>'+
     ring+
     mythicSparks+
   '</svg>';
@@ -2507,7 +2646,13 @@ var SKILL_ICON_THEME = {
   poison:     { c1:'#c8ff5c', c2:'#4a7a1c', glow:'#a0ff3c' },
   ultimate_warrior:{ c1:'#ffe08a', c2:'#c9432f', glow:'#ffb020' },
   ultimate_mage:   { c1:'#e0c8ff', c2:'#5a3fd6', glow:'#b85cff' },
-  ultimate_archer: { c1:'#c8ffe0', c2:'#1f8a5c', glow:'#3fe0d0' }
+  ultimate_archer: { c1:'#c8ffe0', c2:'#1f8a5c', glow:'#3fe0d0' },
+  shadowstab:      { c1:'#e0c8ff', c2:'#3a1f52', glow:'#c85cff' },
+  smokeveil:       { c1:'#d8c8f0', c2:'#3a1f52', glow:'#9a5cff' },
+  holysmite:       { c1:'#fff6d8', c2:'#d6b23f', glow:'#ffe08a' },
+  guardlight:      { c1:'#fff6d8', c2:'#3fe0d0', glow:'#8affea' },
+  ultimate_assassin:{ c1:'#f0d8ff', c2:'#3a1f52', glow:'#c85cff' },
+  ultimate_paladin: { c1:'#fffbe8', c2:'#d6b23f', glow:'#ffe08a' }
 };
 var svgUidCounter3 = 0;
 function skillIconSVG(iconKey, isUltimate){
@@ -2579,6 +2724,33 @@ function skillIconSVG(iconKey, isUltimate){
       glyph = '<path d="M14 30 L44 30 M36 18 L48 30 L36 42" stroke="url(#skg'+uid+')" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+
               '<path d="M20 22 L38 22 M30 14 L42 22 L30 30" stroke="url(#skg'+uid+')" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>'+
               '<path d="M20 38 L38 38 M30 30 L42 38 L30 46" stroke="url(#skg'+uid+')" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>';
+      break;
+    case 'shadowstab':
+      glyph = '<path d="M16 44 L38 18 L44 12 L40 20 L18 46 Z" fill="url(#skg'+uid+')"/>'+
+              '<path d="M16 44 L38 18" stroke="#fff" stroke-width="1.4" opacity="0.5"/>'+
+              '<circle cx="16" cy="44" r="2.2" fill="'+t.glow+'"/>';
+      break;
+    case 'smokeveil':
+      glyph = '<path d="M18 40 Q24 30 18 22 Q28 26 30 16 Q34 26 44 24 Q36 32 42 40 Q30 36 26 44 Q22 36 18 40 Z" fill="url(#skg'+uid+')" opacity="0.9"/>'+
+              '<circle cx="30" cy="30" r="3" fill="#fff" opacity="0.5"/>';
+      break;
+    case 'holysmite':
+      glyph = '<path d="M30 10 L34 26 L30 26 L36 50 L26 30 L30 30 Z" fill="url(#skg'+uid+')"/>'+
+              '<path d="M18 22 L42 22" stroke="'+t.glow+'" stroke-width="2" opacity="0.55"/>';
+      break;
+    case 'guardlight':
+      glyph = '<path d="M30 12 L44 18 L44 32 Q44 46 30 50 Q16 46 16 32 L16 18 Z" fill="url(#skg'+uid+')"/>'+
+              '<path d="M30 22 L30 40 M21 31 L39 31" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>';
+      break;
+    case 'ultimate_assassin':
+      glyph = '<path d="M14 40 L34 12 L38 8 L36 18 L18 44 Z" fill="url(#skg'+uid+')"/>'+
+              '<path d="M22 46 L42 18 L46 14 L44 24 L26 50 Z" fill="url(#skg'+uid+')" opacity="0.75"/>'+
+              '<circle cx="30" cy="30" r="4" fill="#fff" opacity="0.7"/>';
+      break;
+    case 'ultimate_paladin':
+      glyph = '<path d="M30 8 L34 26 L30 26 L38 52 L22 28 L28 28 Z" fill="url(#skg'+uid+')"/>'+
+              '<circle cx="30" cy="30" r="16" fill="none" stroke="url(#skg'+uid+')" stroke-width="2" opacity="0.6"/>'+
+              '<circle cx="30" cy="30" r="5" fill="#fff" opacity="0.85"/>';
       break;
     default:
       glyph = '<circle cx="30" cy="30" r="10" fill="url(#skg'+uid+')"/>';
@@ -3770,6 +3942,58 @@ function spawnImpactBurst(targetEl, cls){
   setTimeout(function(){ if(b.parentNode) b.parentNode.removeChild(b); }, 380);
 }
 
+/* ---- generic elemental spark burst: N glowing particles fly outward from
+   the target and fade — used to color-code every skill hit by its element
+   (fire/ice/poison/holy/shadow/etc.) instead of one generic flash ---- */
+function spawnSparks(targetEl, color, count){
+  if(!targetEl) return;
+  var layer = $('float-layer');
+  var rect = targetEl.getBoundingClientRect();
+  var parentRect = layer.getBoundingClientRect();
+  var cx = rect.left - parentRect.left + rect.width/2;
+  var cy = rect.top - parentRect.top + rect.height/2;
+  var n = count || 8;
+  for(var i=0;i<n;i++){
+    var ang = (Math.PI*2*i/n) + (Math.random()*0.6-0.3);
+    var dist = 26 + Math.random()*40;
+    var s = document.createElement('div');
+    s.className = 'spark-particle';
+    s.style.left = cx+'px';
+    s.style.top = cy+'px';
+    s.style.background = color;
+    s.style.boxShadow = '0 0 8px '+color+', 0 0 3px #fff';
+    s.style.setProperty('--sx', Math.cos(ang)*dist+'px');
+    s.style.setProperty('--sy', Math.sin(ang)*dist+'px');
+    s.style.animationDuration = (0.45+Math.random()*0.25)+'s';
+    layer.appendChild(s);
+    (function(el){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 750); })(s);
+  }
+}
+
+/* ---- rising golden/teal motes for heals, distinct from combat sparks ---- */
+function spawnHealBurst(targetEl){
+  if(!targetEl) return;
+  var layer = $('float-layer');
+  var rect = targetEl.getBoundingClientRect();
+  var parentRect = layer.getBoundingClientRect();
+  var cx = rect.left - parentRect.left + rect.width/2;
+  var cy = rect.top - parentRect.top + rect.height/2;
+  var ring = document.createElement('div');
+  ring.className = 'heal-ring';
+  ring.style.left = cx+'px'; ring.style.top = cy+'px';
+  layer.appendChild(ring);
+  setTimeout(function(){ if(ring.parentNode) ring.parentNode.removeChild(ring); }, 650);
+  for(var i=0;i<12;i++){
+    var m = document.createElement('div');
+    m.className = 'heal-mote';
+    m.style.left = (cx + (Math.random()*70-35))+'px';
+    m.style.top = (cy + 20 + Math.random()*20)+'px';
+    m.style.animationDelay = (Math.random()*0.25)+'s';
+    layer.appendChild(m);
+    (function(el){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 1100); })(m);
+  }
+}
+
 function spawnMythicSparkle(targetEl){
   if(!targetEl) return;
   var layer = $('float-layer');
@@ -3879,7 +4103,8 @@ function renderSkillCircles(){
 
 var PROJECTILE_GLYPH = {
   slash:'💫', warcry:'📣', fire:'🔥', ice:'❄️', doubleshot:'🏹', poison:'☠️',
-  ultimate_warrior:'💥', ultimate_mage:'🌌', ultimate_archer:'🏹'
+  ultimate_warrior:'💥', ultimate_mage:'🌌', ultimate_archer:'🏹',
+  shadowstab:'🗡️', holysmite:'⚡', ultimate_assassin:'🌀', ultimate_paladin:'✨'
 };
 
 function fireSkillProjectile(iconKey, cb){
@@ -3891,6 +4116,7 @@ function fireSkillProjectile(iconKey, cb){
   var startY = hRect.top - arenaRect.top + hRect.height/2;
   var endX = eRect.left - arenaRect.left + eRect.width/2;
   var endY = eRect.top - arenaRect.top + eRect.height/2;
+  var theme = SKILL_ICON_THEME[iconKey] || SKILL_ICON_THEME.slash;
   var proj = document.createElement('div');
   proj.className = 'skill-projectile';
   proj.textContent = PROJECTILE_GLYPH[iconKey] || '✨';
@@ -3898,11 +4124,35 @@ function fireSkillProjectile(iconKey, cb){
   proj.style.top = startY+'px';
   proj.style.setProperty('--dx', (endX-startX)+'px');
   proj.style.setProperty('--dy', (endY-startY)+'px');
+  proj.style.setProperty('--glow', theme.glow);
   layer.appendChild(proj);
+
+  /* glowing trail: small dots dropped along the flight path, fading fast,
+     so the projectile reads as a streak of light instead of a flat glyph */
+  var flightMs = 340, dropped = 0, maxDrops = 7;
+  var trailTimer = setInterval(function(){
+    dropped++;
+    var t = dropped / maxDrops;
+    var dot = document.createElement('div');
+    dot.className = 'spark-particle';
+    dot.style.left = (startX + (endX-startX)*t) + 'px';
+    dot.style.top = (startY + (endY-startY)*t) + 'px';
+    dot.style.background = theme.glow;
+    dot.style.boxShadow = '0 0 7px '+theme.glow;
+    dot.style.setProperty('--sx', (Math.random()*10-5)+'px');
+    dot.style.setProperty('--sy', (Math.random()*10-5)+'px');
+    dot.style.animationDuration = '.32s';
+    layer.appendChild(dot);
+    (function(el){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 340); })(dot);
+    if(dropped>=maxDrops) clearInterval(trailTimer);
+  }, flightMs/maxDrops);
+
   setTimeout(function(){
+    clearInterval(trailTimer);
     if(proj.parentNode) proj.parentNode.removeChild(proj);
+    spawnSparks($('enemy-sprite'), theme.glow, 6); // small impact pop right as the hit lands
     if(cb) cb();
-  }, 340);
+  }, flightMs);
 }
 
 function useSkill(sid){
@@ -3922,6 +4172,19 @@ function useSkill(sid){
     b.playerBuff = { atkMult:1.3, turns:3 };
     b.log = 'أطلقت '+s.name+'! هجومك يرتفع للجولات القادمة';
     floatDamage('تعزيز!','heal', $('hero-sprite-wrap'));
+    spawnSparks($('hero-sprite-wrap'), (SKILL_ICON_THEME[s.icon]||SKILL_ICON_THEME.slash).glow, 10);
+    renderBattle();
+    hideSubPanels();
+    afterPlayerAction();
+    return;
+  }
+
+  if(s.kind==='heal'){
+    var healAmt = Math.round(p.maxHp * s.heal);
+    p.hp = clamp(p.hp + healAmt, 0, p.maxHp);
+    b.log = 'استخدمت '+s.name+' واستعدت '+healAmt+' نقطة صحة';
+    floatDamage('+'+healAmt, 'heal', $('hero-sprite-wrap'));
+    spawnHealBurst($('hero-sprite-wrap'));
     renderBattle();
     hideSubPanels();
     afterPlayerAction();
@@ -3940,8 +4203,10 @@ function useSkill(sid){
       if(e.hp<=0) break;
     }
     if(s.poison && e.hp>0){ e.poisonTurns = 3; }
+    if(s.bleed && e.hp>0){ e.bleedTurns = 3; }
     if(s.freeze && e.hp>0 && Math.random()<s.freeze){ e.frozen = true; }
-    b.log = (s.ultimate ? '🔥 قوة خارقة! ' : '') + 'استخدمت '+s.name+' وألحقت '+total+' ضرراً' + (s.poison?' وسممت العدو!':'') + (s.freeze&&e.frozen?' وجمدت العدو!':'');
+    spawnSparks($('enemy-sprite'), (SKILL_ICON_THEME[s.icon]||SKILL_ICON_THEME.slash).glow, s.ultimate ? 18 : (lastCrit ? 12 : 7));
+    b.log = (s.ultimate ? '🔥 قوة خارقة! ' : '') + 'استخدمت '+s.name+' وألحقت '+total+' ضرراً' + (s.poison?' وسممت العدو!':'') + (s.bleed&&e.bleedTurns?' وأدميت العدو!':'') + (s.freeze&&e.frozen?' وجمدت العدو!':'');
     renderBattle();
     hideSubPanels();
     afterPlayerAction();
@@ -3949,28 +4214,50 @@ function useSkill(sid){
 }
 
 function castUltimateVisual(s){
+  var theme = SKILL_ICON_THEME[s.icon] || SKILL_ICON_THEME.ultimate_warrior;
   var hs = $('hero-sprite');
   hs.classList.remove('ultimate-cast'); void hs.offsetWidth; hs.classList.add('ultimate-cast');
+  hs.style.setProperty('--ult-glow', theme.glow);
   setTimeout(function(){ hs.classList.remove('ultimate-cast'); }, 900);
 
   var flash = document.createElement('div');
   flash.className = 'ultimate-flash';
+  flash.style.background = 'radial-gradient(circle at 20% 50%, '+theme.glow+'88, transparent 65%)';
   $('arena-wrap').appendChild(flash);
   setTimeout(function(){ if(flash.parentNode) flash.parentNode.removeChild(flash); }, 700);
 
   var banner = document.createElement('div');
   banner.className = 'ultimate-banner';
+  banner.style.color = theme.glow;
+  banner.style.textShadow = '0 0 12px '+theme.glow+', 0 2px 6px rgba(0,0,0,0.8)';
   banner.textContent = '⚡ ' + s.name + ' ⚡';
   $('arena-wrap').appendChild(banner);
   setTimeout(function(){ if(banner.parentNode) banner.parentNode.removeChild(banner); }, 1200);
 
+  // layered shockwave rings expanding from the hero, colored by element
+  var arenaWrap = $('arena-wrap');
+  for(var r=0;r<3;r++){
+    (function(delay){
+      setTimeout(function(){
+        var ring = document.createElement('div');
+        ring.className = 'ult-shock-ring';
+        ring.style.borderColor = theme.glow;
+        ring.style.left = '38%'; ring.style.top = '54%';
+        arenaWrap.appendChild(ring);
+        setTimeout(function(){ if(ring.parentNode) ring.parentNode.removeChild(ring); }, 600);
+      }, delay);
+    })(r*110);
+  }
+
   var layer = $('float-layer');
-  for(var i=0;i<14;i++){
+  for(var i=0;i<22;i++){
     var p = document.createElement('div');
     p.className = 'ultimate-particle';
     p.style.left = (45+Math.random()*45)+'%';
     p.style.top = (30+Math.random()*40)+'%';
     p.style.animationDelay = (Math.random()*0.3)+'s';
+    p.style.background = 'radial-gradient(circle, #fff, '+theme.glow+')';
+    p.style.boxShadow = '0 0 8px '+theme.glow;
     layer.appendChild(p);
     (function(el){ setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, 1000); })(p);
   }
@@ -4062,6 +4349,17 @@ function enemyTurn(){
     e.hp = clamp(e.hp-pdmg,0,e.maxHp);
     e.poisonTurns--;
     floatDamage(pdmg,'',$('enemy-sprite'));
+    spawnSparks($('enemy-sprite'), '#8a6fd6', 5);
+    if(e.hp<=0){ renderBattle(); setTimeout(victory, 500); return; }
+  }
+
+  // bleed tick (shadow_stab) — hits a little harder than poison but shorter/no stacking
+  if(e.bleedTurns>0){
+    var bdmg = Math.max(1, Math.round(e.maxHp*0.07));
+    e.hp = clamp(e.hp-bdmg,0,e.maxHp);
+    e.bleedTurns--;
+    floatDamage(bdmg,'',$('enemy-sprite'));
+    spawnSparks($('enemy-sprite'), '#c85cff', 5);
     if(e.hp<=0){ renderBattle(); setTimeout(victory, 500); return; }
   }
 
@@ -4475,12 +4773,13 @@ function onMpRoomMessage(evt){
     t.flash = 0.18;
     league.floaters.push({ x:t.x, y:t.y-4, life:0.9, born:0, txt:'-'+data.dmg, crit:data.crit });
     if(t.controlled==='me' || (a&&a.controlled==='me')) league.shake = Math.min(6, league.shake+2.2);
-    if(data.ko) league.fx.push({ type:'ko', x:t.x, y:t.y, life:0.6, born:0 });
+    if(data.ko){ league.fx.push({ type:'ko', x:t.x, y:t.y, life:0.6, born:0 }); leagueSpawnParticles(t.x, t.y, '#ffe08a', 18, 0.6); }
+    else leagueSpawnParticles(t.x, t.y, data.crit ? '#ffce6b' : '#ffffff', data.crit ? 10 : 5, 0.38);
   } else if(data.type==='fxEvent'){
     if(league.isHost) return;
     var a2 = findLeagueUnit(data.aTeam, data.aIdx), t2 = findLeagueUnit(data.tTeam, data.tIdx);
     if(!a2 || !t2) return;
-    if(data.kind==='slash') league.fx.push({ type:'slash', x:t2.x, y:t2.y, life:0.22, born:0, color: a2.team==='blue'?'#3fe0d0':'#d43c56' });
+    if(data.kind==='slash') league.fx.push({ type:'slash', x:t2.x, y:t2.y, life:0.22, born:0, color: data.color || (a2.team==='blue'?'#3fe0d0':'#d43c56') });
     else if(data.kind==='arrow') league.fx.push({ type:'arrow', x0:a2.x, y0:a2.y, x:t2.x, y:t2.y, life:0.22, born:0, color:'#ffd45e' });
     else league.fx.push({ type:'bolt', x0:a2.x, y0:a2.y, x:t2.x, y:t2.y, life:0.18, born:0, color: a2.cls==='mage'?'#a86bff':'#ffd45e' });
   } else if(data.type==='specialFx'){
@@ -4493,7 +4792,8 @@ function onMpRoomMessage(evt){
     var a4 = findLeagueUnit(data.aTeam, data.aIdx), t4 = findLeagueUnit(data.tTeam, data.tIdx);
     if(!a4 || !t4) return;
     league.fx.push({ type:data.kind, x:t4.x, y:t4.y, x0:a4.x, y0:a4.y, life:0.35, born:0,
-      color: a4.cls==='mage' ? '#a86bff' : (a4.cls==='archer' ? '#ffd45e' : '#3fe0d0') });
+      color: a4.cls==='mage' ? '#a86bff' : (a4.cls==='archer' ? '#ffd45e' :
+        (a4.cls==='assassin' ? '#c85cff' : (a4.cls==='paladin' ? '#ffe08a' : '#3fe0d0'))) });
   } else if(data.type==='duelRoundEnd'){
     if(league.isHost) return; // host already resolved this locally
     duelApplyRoundEndFromPeer(data);
@@ -4617,9 +4917,9 @@ function leagueStatsFor(cls, lvl, isPlayer){
     spd: c.base.spd + c.growth.spd*(L-1)
   };
 }
-var LEAGUE_RANGE = { warrior:9, mage:14, archer:13 };
-var LEAGUE_ABILITY_CD = { warrior:4, mage:5, archer:3.5 };
-var LEAGUE_ATK_CD = { warrior:0.85, mage:1.3, archer:0.7 };
+var LEAGUE_RANGE = { warrior:9, mage:14, archer:13, assassin:8, paladin:9.5 };
+var LEAGUE_ABILITY_CD = { warrior:4, mage:5, archer:3.5, assassin:3.2, paladin:4.5 };
+var LEAGUE_ATK_CD = { warrior:0.85, mage:1.3, archer:0.7, assassin:0.6, paladin:0.95 };
 var LEAGUE_RESPAWN_SECONDS = 6;
 
 function makeLeagueUnit(team, idx, cls, lvl){
@@ -4638,7 +4938,7 @@ function makeLeagueUnit(team, idx, cls, lvl){
     atkCd: 0, ko:false, koTimer:0,
     facing: team==='blue' ? -1 : 1,
     bob: Math.random()*Math.PI*2,
-    flash: 0, attackAnim: 0, moving:false,
+    flash: 0, moving:false,
     specialCd: 0, specialReady: false,
     abilityCd: 0, ultCharge: 0,
     /* controlled: 'me' = this device's player, 'net' = a real remote player
@@ -4946,6 +5246,7 @@ function newLeagueState(){
     zones: LEAGUE_ZONES_DEF.map(function(z){ return { id:z.id, name:z.name, x:z.x, y:z.y, progress:0, owner:null }; }),
     units: [],
     fx: [],       // transient visual effects (slashes/projectiles/impacts)
+    particles: [], // lightweight glowing dots for hit sparks / trails / explosions
     floaters: [],  // floating damage/heal numbers
     killfeed: [],
     shake: 0,
@@ -4996,7 +5297,7 @@ function showLeagueShowcase(){
   wrap.innerHTML = '';
   order.forEach(function(u){
     var c = CLASSES[u.cls];
-    var aura = u.isPlayer ? '#e0b84c' : (u.cls==='warrior' ? '#c9432f' : u.cls==='mage' ? '#8a6fd6' : '#3fe0d0');
+    var aura = u.isPlayer ? '#e0b84c' : (CLASS_PALETTE[u.cls] ? CLASS_PALETTE[u.cls].metal : '#3fe0d0');
     var stars = u.isPlayer ? '★★★★★' : '★★★★';
     var card = document.createElement('div');
     card.className = 'lgs-hero-card' + (u.isPlayer ? ' leader' : '');
@@ -5073,7 +5374,7 @@ function startLeagueMatch(){
   var lvl = state.player.level || 1;
   // blue team: player + 4 AI allies
   league.units.push(makeLeagueUnit('blue', 0, state.player.cls, lvl));
-  var allyClasses = [classKeys[0], classKeys[1], classKeys[2], classKeys[0]];
+  var allyClasses = [classKeys[1%classKeys.length], classKeys[2%classKeys.length], classKeys[3%classKeys.length], classKeys[4%classKeys.length]];
   for(var i=0;i<4;i++) league.units.push(makeLeagueUnit('blue', i+1, allyClasses[i], lvl));
   // red team: 5 AI enemies
   for(var j=0;j<5;j++) league.units.push(makeLeagueUnit('red', j, classKeys[j%classKeys.length], lvl));
@@ -5280,9 +5581,9 @@ function leagueDealDamage(attacker, target, mult, label){
   var dmg = Math.max(2, Math.round((raw - def) * 0.82));
   target.hp -= dmg;
   target.flash = 0.18;
-  attacker.attackAnim = 0.22;
   attacker.ultCharge = clamp((attacker.ultCharge||0) + (mult>=2.5?22:mult>=1.3?13:8), 0, 100);
   league.floaters.push({ x:target.x, y:target.y-4, life:0.9, born:0, txt:'-'+dmg, crit:mult>1 });
+  leagueSpawnParticles(target.x, target.y, mult>1.4 ? '#ffce6b' : '#ffffff', mult>1.4 ? 10 : 5, 0.38);
   if(target.controlled==='me' || attacker.controlled==='me') league.shake = Math.min(6, league.shake+2.2);
   var isKo = false;
   if(target.hp<=0){
@@ -5290,6 +5591,7 @@ function leagueDealDamage(attacker, target, mult, label){
     target.koTimer = league.isDuel ? 0 : LEAGUE_RESPAWN_SECONDS;
     isKo = true;
     league.fx.push({ type:'ko', x:target.x, y:target.y, life:0.6, born:0 });
+    leagueSpawnParticles(target.x, target.y, '#ffe08a', 18, 0.6);
     var atkName = attacker.controlled==='me' ? 'أنت' : CLASSES[attacker.cls].name+' ('+(attacker.team==='blue'?'🔵':'🔴')+')';
     var tgtName = target.controlled==='me' ? 'أنت' : CLASSES[target.cls].name+' ('+(target.team==='blue'?'🔵':'🔴')+')';
     leaguePushKillfeed('⚔️ '+atkName+' أسقط '+tgtName);
@@ -5321,7 +5623,6 @@ function leagueUpdateCombat(dt){
   league.units.forEach(function(u){
     if(u.ko) return;
     if(u.flash>0) u.flash -= dt;
-    if(u.attackAnim>0) u.attackAnim -= dt;
     if(u.atkCd>0) u.atkCd -= dt;
     if(u.specialCd>0){ u.specialCd -= dt; if(u.specialCd<0) u.specialCd=0; }
     if(u.abilityCd>0){ u.abilityCd -= dt; if(u.abilityCd<0) u.abilityCd=0; }
@@ -5339,9 +5640,13 @@ function myLeagueUnit(){
   return league.units.filter(function(u){ return u.controlled==='me'; })[0] || league.units[0];
 }
 
+function isLeagueMeleeClass(cls){ return cls==='warrior' || cls==='assassin' || cls==='paladin'; }
+
 function leagueSpawnAttackFx(attacker, target){
-  if(attacker.cls==='warrior'){
-    league.fx.push({ type:'slash', x:target.x, y:target.y, life:0.22, born:0, color: attacker.team==='blue'?'#3fe0d0':'#d43c56' });
+  var meleeColor = attacker.cls==='assassin' ? '#c85cff' : (attacker.cls==='paladin' ? '#ffe08a' : (attacker.team==='blue'?'#3fe0d0':'#d43c56'));
+  if(isLeagueMeleeClass(attacker.cls)){
+    league.fx.push({ type:'slash', x:target.x, y:target.y, life:0.22, born:0, color: meleeColor });
+    leagueSpawnParticles(target.x, target.y, meleeColor, 4, 0.28);
   } else if(attacker.cls==='archer'){
     league.fx.push({ type:'arrow', x0:attacker.x, y0:attacker.y, x:target.x, y:target.y, life:0.22, born:0, color:'#ffd45e' });
   } else {
@@ -5349,8 +5654,8 @@ function leagueSpawnAttackFx(attacker, target){
       color: attacker.cls==='mage' ? '#a86bff' : '#ffd45e' });
   }
   if(league.online && league.isHost){
-    mpBroadcast({ type:'fxEvent', kind: attacker.cls==='warrior'?'slash':(attacker.cls==='archer'?'arrow':'bolt'), aTeam:attacker.team, aIdx:attacker.idx,
-      tTeam:target.team, tIdx:target.idx });
+    mpBroadcast({ type:'fxEvent', kind: isLeagueMeleeClass(attacker.cls)?'slash':(attacker.cls==='archer'?'arrow':'bolt'),
+      color: meleeColor, aTeam:attacker.team, aIdx:attacker.idx, tTeam:target.team, tIdx:target.idx });
   }
 }
 
@@ -5359,7 +5664,23 @@ function leagueUpdateFx(dt){
   league.fx = league.fx.filter(function(f){ return f.born < f.life; });
   league.floaters.forEach(function(f){ f.born += dt; f.y -= dt*6; });
   league.floaters = league.floaters.filter(function(f){ return f.born < f.life; });
+  league.particles.forEach(function(p){ p.born += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= 0.92; p.vy *= 0.92; });
+  league.particles = league.particles.filter(function(p){ return p.born < p.life; });
   if(league.shake>0) league.shake = Math.max(0, league.shake - dt*14);
+}
+
+/* ---- lightweight glowing particle burst used for hit sparks, trails and
+   explosions across the whole 5×5 battlefield (world-space coordinates) ---- */
+function leagueSpawnParticles(x, y, color, count, life){
+  if(!league) return;
+  for(var i=0;i<count;i++){
+    var ang = Math.random()*Math.PI*2;
+    var spd = 6 + Math.random()*14;
+    league.particles.push({
+      x:x, y:y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+      life: life || 0.4, born:0, size: 0.35+Math.random()*0.5, color: color
+    });
+  }
 }
 
 function useLeagueSpecial(){
@@ -5381,8 +5702,12 @@ function leagueResolveSpecial(p){
   if(!target){ if(p.controlled==='me') toast('لا يوجد عدو قريب بما يكفي'); return; }
   p.specialCd = league.specialCdMax;
   league.shake = Math.min(8, league.shake+3.5);
-  var kind = p.cls==='mage' ? 'nova' : (p.cls==='archer' ? 'barrage' : 'smash');
+  var kind = p.cls==='mage' ? 'nova' : (p.cls==='archer' ? 'barrage' :
+             (p.cls==='assassin' ? 'shadowstrike' : (p.cls==='paladin' ? 'holystrike' : 'smash')));
+  var specialColor = p.cls==='mage' ? '#a86bff' : (p.cls==='archer' ? '#ffd45e' :
+    (p.cls==='assassin' ? '#c85cff' : (p.cls==='paladin' ? '#ffe08a' : '#ffcf5c')));
   league.fx.push({ type: kind, x:target.x, y:target.y, x0:p.x, y0:p.y, life:0.5, born:0 });
+  leagueSpawnParticles(target.x, target.y, specialColor, 14, 0.5);
   if(league.online && league.isHost) mpBroadcast({ type:'specialFx', kind:kind, aTeam:p.team, aIdx:p.idx, tTeam:target.team, tIdx:target.idx });
   leagueDealDamage(p, target, 2.6);
   if(p.cls==='archer'){ // extra hits for the barrage-style ultimate
@@ -5427,8 +5752,10 @@ function leagueResolveAbility(p){
   p.abilityCd = LEAGUE_ABILITY_CD[p.cls];
   league.shake = Math.min(6, league.shake+2);
   var kind = p.cls==='mage' ? 'bolt' : (p.cls==='archer' ? 'barrage' : 'slash');
-  league.fx.push({ type: kind, x:target.x, y:target.y, x0:p.x, y0:p.y, life:0.35, born:0,
-    color: p.cls==='mage' ? '#a86bff' : (p.cls==='archer' ? '#ffd45e' : '#3fe0d0') });
+  var abilityColor = p.cls==='mage' ? '#a86bff' : (p.cls==='archer' ? '#ffd45e' :
+    (p.cls==='assassin' ? '#c85cff' : (p.cls==='paladin' ? '#ffe08a' : '#3fe0d0')));
+  league.fx.push({ type: kind, x:target.x, y:target.y, x0:p.x, y0:p.y, life:0.35, born:0, color: abilityColor });
+  leagueSpawnParticles(target.x, target.y, abilityColor, 5, 0.3);
   if(league.online && league.isHost) mpBroadcast({ type:'abilityFx', kind:kind, aTeam:p.team, aIdx:p.idx, tTeam:target.team, tIdx:target.idx });
   leagueDealDamage(p, target, p.cls==='archer' ? 0.9 : 1.4);
   if(p.cls==='archer'){
@@ -5443,7 +5770,7 @@ function updateLeagueAbilityBtn(){
   if(!btn) return;
   var p = myLeagueUnit();
   if(!p) return;
-  if(icon) icon.textContent = p.cls==='mage' ? '🔥' : (p.cls==='archer' ? '🏹' : '💥');
+  if(icon) icon.textContent = p.cls==='mage' ? '🔥' : (p.cls==='archer' ? '🏹' : (p.cls==='assassin' ? '🗡️' : (p.cls==='paladin' ? '✨' : '💥')));
   if(p.abilityCd>0){
     btn.classList.add('cooling');
     cdEl.classList.remove('hidden');
@@ -5459,7 +5786,9 @@ function updateLeagueAbilityBtn(){
 var LEAGUE_ULTIMATES = {
   warrior:{ name:'غضب التيتان', banner:'غضب التيتان!!', icon:'🌋', color:'#ff5c78', mult:3.2, radius:16 },
   mage:{ name:'نيزك الفناء', banner:'نيزك الفناء!!', icon:'☄️', color:'#8a6fd6', mult:2.6, radius:18 },
-  archer:{ name:'وابل السهام القدرية', banner:'وابل السهام القدرية!!', icon:'🏹', color:'#3fe0d0', mult:2.0, radius:20 }
+  archer:{ name:'وابل السهام القدرية', banner:'وابل السهام القدرية!!', icon:'🏹', color:'#3fe0d0', mult:2.0, radius:20 },
+  assassin:{ name:'رقصة الأشباح', banner:'رقصة الأشباح!!', icon:'🗡️', color:'#c85cff', mult:2.9, radius:14 },
+  paladin:{ name:'نور الفجر المقدس', banner:'نور الفجر المقدس!!', icon:'✨', color:'#ffe08a', mult:2.4, radius:19 }
 };
 
 function useLeagueUltimate(){
@@ -5480,6 +5809,7 @@ function leagueResolveUltimate(p){
   p.ultCharge = 0;
   league.shake = Math.min(10, league.shake+4.5);
   league.fx.push({ type:'nova', x:p.x, y:p.y, x0:p.x, y0:p.y, life:0.6, born:0, color:ult.color, big:true });
+  leagueSpawnParticles(p.x, p.y, ult.color, 28, 0.65);
   leagueShowUltBanner(ult.banner, ult.color);
   var hitAny = false;
   league.units.forEach(function(u){
@@ -5605,6 +5935,7 @@ function getLeagueHeroSprite(cls, rarity){
 
 function leagueDrawUnitBody(ctx, u, T, scale){
   var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
+  var teamGlow = u.team==='blue' ? '#3fe0d0' : '#d43c56';
   ctx.save();
   ctx.translate(u.x*T, u.y*T);
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.4*scale;
@@ -5614,60 +5945,41 @@ function leagueDrawUnitBody(ctx, u, T, scale){
   var use3D = League3D && League3D.ready;
 
   if(!use3D){
-    // ground shadow (no ring — just a plain contact shadow now)
-    ctx.beginPath(); ctx.ellipse(0, r*0.98, r*0.62, r*0.2, 0, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fill();
+    // ground shadow
+    ctx.beginPath(); ctx.ellipse(0, r*0.92, r*0.85, r*0.28, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fill();
+  }
 
-    ctx.globalAlpha = u.ko ? 0.22 : 1;
+  ctx.globalAlpha = u.ko ? 0.22 : 1;
 
-    // real walking legs — a proper stride while moving, a light idle sway while
-    // standing still, drawn first so they read as poking out beneath the body
-    if(!u.ko){
-      var strideAmp = u.moving ? r*0.34 : r*0.05;
-      var swingL = Math.sin(u.bob) * strideAmp;
-      var swingR = Math.sin(u.bob+Math.PI) * strideAmp;
-      ctx.strokeStyle = pal.secondary; ctx.lineWidth = Math.max(1.8, r*0.17); ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(-r*0.17, r*0.5); ctx.lineTo(-r*0.17+swingL, r*0.95); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(r*0.17, r*0.5); ctx.lineTo(r*0.17+swingR, r*0.95); ctx.stroke();
-      ctx.fillStyle = shadeHex(pal.secondary,-0.3);
-      ctx.beginPath(); ctx.ellipse(-r*0.17+swingL, r*0.98, r*0.15, r*0.09, 0, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(r*0.17+swingR, r*0.98, r*0.15, r*0.09, 0, 0, Math.PI*2); ctx.fill();
-    }
-
-    // attack swing: a real forward lunge + tilt timed to the hit, so striking
-    // actually looks like striking instead of the target just silently losing HP
-    var atkK = (u.attackAnim>0) ? clamp(u.attackAnim/0.22, 0, 1) : 0;
-    var lungeCurve = atkK>0 ? Math.sin((1-atkK)*Math.PI) : 0;
-    var lungeX = u.facing * lungeCurve * r*0.42;
-    var tilt = -u.facing * lungeCurve * 0.24;
-
+  if(!use3D){
+    // the exact hero-showcase portrait artwork, mirrored to face the enemy side
     var sprite = getLeagueHeroSprite(u.cls, u.controlled==='me' ? 'legendary' : 'epic');
     var spriteSize = r*2.35;
-    ctx.save();
-    ctx.translate(lungeX, 0);
-    ctx.rotate(tilt);
-    ctx.scale(u.facing, 1);
     if(sprite){
+      ctx.save();
+      ctx.scale(u.facing, 1);
       ctx.drawImage(sprite, -spriteSize/2, -spriteSize*0.92, spriteSize, spriteSize);
+      ctx.restore();
     } else {
       // sprite still rasterizing (first frame only) — simple placeholder disc so nothing pops in abruptly
       ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.62, 0, Math.PI*2);
       ctx.fillStyle = pal.primary; ctx.fill();
     }
-    ctx.restore();
 
-    // a bright slash arc right at the moment of impact — makes the strike unmistakable
-    if(atkK>0.12){
-      ctx.save();
-      ctx.translate(u.facing*r*0.95, -r*0.05);
-      ctx.rotate(u.facing>0 ? -0.55 : Math.PI+0.55);
-      ctx.strokeStyle = 'rgba(255,255,255,'+(0.8*atkK).toFixed(2)+')';
-      ctx.lineWidth = Math.max(1.6, r*0.15); ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.arc(0,0, r*0.58, -0.75, 0.75); ctx.stroke();
-      ctx.restore();
+    // team ring
+    ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62, 0, Math.PI*2);
+    ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.09); ctx.globalAlpha = u.ko?0.15:0.85; ctx.stroke();
+
+    // player gold outline + soft glow so your own hero always reads instantly
+    if(u.controlled==='me'){
+      ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.3;
+      ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62+Math.max(2,r*0.18), 0, Math.PI*2);
+      ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.07); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
+      ctx.shadowBlur = 0;
     }
 
-    // hit flash overlay (being struck)
+    // hit flash overlay
     if(u.flash>0 && !u.ko){
       ctx.globalAlpha = Math.min(0.6, u.flash*3.2);
       ctx.beginPath(); ctx.arc(0, -r*0.1, r*0.75, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
@@ -5706,14 +6018,6 @@ function hexToRgbStr(hex){
   var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
   return r+','+g+','+b;
 }
-function shadeHex(hex, amt){
-  var h = hex.replace('#','');
-  if(h.length===3) h = h.split('').map(function(c){ return c+c; }).join('');
-  var r = parseInt(h.substr(0,2),16), g = parseInt(h.substr(2,2),16), b = parseInt(h.substr(4,2),16);
-  function adj(c){ return amt<0 ? Math.round(c*(1+amt)) : Math.round(c+(255-c)*amt); }
-  r=clamp(adj(r),0,255); g=clamp(adj(g),0,255); b=clamp(adj(b),0,255);
-  return 'rgb('+r+','+g+','+b+')';
-}
 
 function leagueDrawFx(ctx, T){
   league.fx.forEach(function(f){
@@ -5723,12 +6027,26 @@ function leagueDrawFx(ctx, T){
     if(f.type==='slash'){
       ctx.translate(f.x*T, f.y*T);
       ctx.rotate((t*1.4-0.3));
-      ctx.strokeStyle = f.color; ctx.lineWidth = 3; ctx.lineCap='round';
+      // layered glowing arc: soft wide glow behind a crisp bright core, plus a
+      // faster secondary "echo" arc trailing it, so the swing reads as motion
+      ctx.shadowColor = f.color; ctx.shadowBlur = T*1.6;
+      ctx.strokeStyle = f.color; ctx.lineWidth = 5.5; ctx.lineCap='round'; ctx.globalAlpha = Math.max(0,alpha)*0.5;
       ctx.beginPath(); ctx.arc(0,0, T*4.5, -0.7, 0.7); ctx.stroke();
+      ctx.shadowBlur = T*0.6;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0,alpha);
+      ctx.beginPath(); ctx.arc(0,0, T*4.5, -0.55, 0.55); ctx.stroke();
+      ctx.strokeStyle = f.color; ctx.lineWidth = 2.5; ctx.globalAlpha = Math.max(0,alpha)*0.6;
+      ctx.beginPath(); ctx.arc(0,0, T*3.9, -0.4-t*0.5, 0.4-t*0.5); ctx.stroke();
     } else if(f.type==='bolt'){
       var lx = f.x0 + (f.x-f.x0)*Math.min(1,t*2.4), ly = f.y0 + (f.y-f.y0)*Math.min(1,t*2.4);
+      // small glow trail behind the bolt's core
+      ctx.beginPath(); ctx.arc(lx*T, ly*T, T*2.6, 0, Math.PI*2);
+      ctx.fillStyle = f.color; ctx.globalAlpha = Math.max(0,alpha)*0.25; ctx.fill();
+      ctx.globalAlpha = Math.max(0,alpha);
       ctx.beginPath(); ctx.arc(lx*T, ly*T, T*1.6, 0, Math.PI*2);
-      ctx.fillStyle = f.color; ctx.shadowColor = f.color; ctx.shadowBlur = 10; ctx.fill();
+      ctx.fillStyle = f.color; ctx.shadowColor = f.color; ctx.shadowBlur = 14; ctx.fill();
+      ctx.beginPath(); ctx.arc(lx*T, ly*T, T*0.7, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.shadowBlur = 4; ctx.fill();
     } else if(f.type==='arrow'){
       var progress = Math.min(1, t*2.6);
       var ax = f.x0 + (f.x-f.x0)*progress, ay = f.y0 + (f.y-f.y0)*progress;
@@ -5745,15 +6063,24 @@ function leagueDrawFx(ctx, T){
       ctx.beginPath(); ctx.moveTo(T*1.5,0); ctx.lineTo(T*0.6,-T*0.55); ctx.lineTo(T*0.6,T*0.55); ctx.closePath(); ctx.fill();
     } else if(f.type==='ko'){
       ctx.translate(f.x*T, f.y*T);
-      ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffe08a'; ctx.shadowColor='#ffe08a'; ctx.shadowBlur = T*0.8; ctx.lineWidth = 2.4;
       var rr = t*T*10;
       ctx.beginPath(); ctx.arc(0,0, rr, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = Math.max(0,alpha)*0.5; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0,0, rr*0.62, 0, Math.PI*2); ctx.stroke();
     } else if(f.type==='smash'){
       ctx.translate(f.x*T, f.y*T);
+      ctx.shadowColor = '#ffcf5c'; ctx.shadowBlur = T*0.6;
       ctx.strokeStyle = '#ffcf5c'; ctx.lineWidth = 4;
       var rr2 = t*T*13;
       ctx.beginPath(); ctx.arc(0,0, rr2, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0, rr2*0.6, 0, Math.PI*2); ctx.stroke();
+      // ground crack lines radiating outward
+      ctx.strokeStyle = '#c9432f'; ctx.lineWidth = 1.6; ctx.globalAlpha = Math.max(0,alpha)*0.7;
+      for(var sc=0; sc<6; sc++){
+        var scAng = (sc/6)*Math.PI*2;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(scAng)*rr2*0.95, Math.sin(scAng)*rr2*0.95); ctx.stroke();
+      }
     } else if(f.type==='nova'){
       ctx.translate(f.x*T, f.y*T);
       var novaColor = f.color || '168,107,255';
@@ -5765,17 +6092,68 @@ function leagueDrawFx(ctx, T){
       if(f.big){
         ctx.strokeStyle = 'rgba('+rgb+',0.9)'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(0,0, radiusMax*(0.5+t*0.5), 0, Math.PI*2); ctx.stroke();
+        ctx.strokeStyle = 'rgba('+rgb+',0.5)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0,0, radiusMax*(0.3+t*0.75), 0, Math.PI*2); ctx.stroke();
       }
     } else if(f.type==='barrage'){
       ctx.translate(f.x*T, f.y*T);
-      ctx.strokeStyle = '#ffd45e'; ctx.lineWidth = 2;
+      ctx.shadowColor = '#ffd45e'; ctx.shadowBlur = T*0.5;
+      ctx.strokeStyle = '#ffd45e'; ctx.lineWidth = 2.4;
       for(var k=0;k<5;k++){
         var ang = (k/5)*Math.PI*2 + t*3;
         ctx.beginPath(); ctx.moveTo(Math.cos(ang)*T*2, Math.sin(ang)*T*2); ctx.lineTo(Math.cos(ang)*T*8, Math.sin(ang)*T*8); ctx.stroke();
+        ctx.beginPath(); ctx.arc(Math.cos(ang)*T*8, Math.sin(ang)*T*8, T*0.5, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.fill();
       }
+    } else if(f.type==='shadowstrike'){
+      // assassin: several fast diagonal dagger streaks + a purple dash-blur ring
+      ctx.translate(f.x*T, f.y*T);
+      ctx.shadowColor = '#c85cff'; ctx.shadowBlur = T*1.2;
+      ctx.strokeStyle = '#c85cff'; ctx.lineCap = 'round';
+      for(var sk=0; sk<3; sk++){
+        var skOff = (sk-1)*T*2.6;
+        ctx.globalAlpha = Math.max(0, alpha) * (1 - sk*0.22);
+        ctx.lineWidth = 3.4 - sk*0.6;
+        ctx.beginPath();
+        ctx.moveTo(-T*5 + skOff, -T*3 + t*T*4);
+        ctx.lineTo(T*5 + skOff, T*3 - t*T*4);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = Math.max(0, alpha)*0.55;
+      ctx.strokeStyle = '#e0c8ff'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(0,0, t*T*9, 0, Math.PI*2); ctx.stroke();
+    } else if(f.type==='holystrike'){
+      // paladin: a descending column of golden light + a radiant burst ring
+      ctx.translate(f.x*T, f.y*T);
+      var colH = t*T*13;
+      var beamW = T*2.4*(1-t*0.5);
+      var grad = ctx.createLinearGradient(0,-colH*2.2,0,colH*0.4);
+      grad.addColorStop(0,'rgba(255,244,214,0)');
+      grad.addColorStop(0.55,'rgba(255,224,138,0.85)');
+      grad.addColorStop(1,'rgba(255,224,138,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(-beamW/2, -colH*2.2, beamW, colH*2.6);
+      ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = T*0.8;
+      ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.arc(0,0, colH*0.7, 0, Math.PI*2); ctx.stroke();
+      ctx.globalAlpha = Math.max(0,alpha)*0.6; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(-colH*0.55,0); ctx.lineTo(colH*0.55,0);
+      ctx.moveTo(0,-colH*0.55); ctx.lineTo(0,colH*0.55); ctx.stroke();
     }
     ctx.restore();
   });
+
+  // ---- particle system: small glowing dots for hit sparks / trails / explosions ----
+  league.particles.forEach(function(p){
+    var t = p.born / p.life;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1-t);
+    ctx.beginPath(); ctx.arc(p.x*T, p.y*T, T*p.size*(1-t*0.6), 0, Math.PI*2);
+    ctx.fillStyle = p.color; ctx.shadowColor = p.color; ctx.shadowBlur = T*0.5;
+    ctx.fill();
+    ctx.restore();
+  });
+
   league.floaters.forEach(function(f){
     var t = f.born/f.life;
     ctx.save();
@@ -5859,74 +6237,23 @@ function leagueDraw(){
   ctx.strokeStyle = 'rgba(255,208,120,0.25)'; ctx.lineWidth=2;
   ctx.strokeRect(0,0, LEAGUE_ARENA.w*T, LEAGUE_ARENA.h*T);
 
-  // zones — proper raised flag banners instead of a plain circle+letter marker
-  var nowMs = performance.now();
+  // zones
   league.zones.forEach(function(z){
     var px=z.x*T, py=z.y*T, r=LEAGUE_CAPTURE_RADIUS*T;
-    var ownerColor = z.owner==='blue' ? '#3fe0d0' : z.owner==='red' ? '#d43c56' : '#9aa3b5';
-    var fillColor = z.owner==='blue' ? 'rgba(63,224,208,0.14)' : z.owner==='red' ? 'rgba(212,60,86,0.14)' : 'rgba(255,255,255,0.05)';
-
-    // capture-zone ground marker (kept subtle now — the flag itself carries the visual weight)
+    var fillColor = z.owner==='blue' ? 'rgba(63,224,208,0.22)' : z.owner==='red' ? 'rgba(212,60,86,0.22)' : 'rgba(255,255,255,0.06)';
     ctx.fillStyle = fillColor;
     ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 0.5; ctx.strokeStyle = ownerColor; ctx.lineWidth = 1.5;
+    var ringColor = z.owner==='blue' ? '#3fe0d0' : z.owner==='red' ? '#d43c56' : 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = ringColor; ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // progress ring around the base of the pole
-    var pct = Math.abs(z.progress)/100;
+    // progress ring
+    var pct = (z.progress+100)/200;
     ctx.strokeStyle = z.progress>=0 ? '#3fe0d0' : '#d43c56';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(px,py, T*3.6, -Math.PI/2, -Math.PI/2 + pct*Math.PI*2*(z.progress>=0?1:-1));
+    ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.arc(px,py,r+5, -Math.PI/2, -Math.PI/2 + Math.abs(z.progress)/100*Math.PI*2*(z.progress>=0?1:-1));
     ctx.stroke();
-
-    // pole
-    var poleH = T*12;
-    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = Math.max(1.6, T*0.32); ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(px, py+T*0.5); ctx.lineTo(px, py-poleH); ctx.stroke();
-    ctx.beginPath(); ctx.arc(px, py-poleH, T*0.55, 0, Math.PI*2);
-    ctx.fillStyle = '#e0c060'; ctx.fill();
-
-    // the banner rises up the pole with capture progress (0 = furled at the base,
-    // 1 = fully raised) — its curved trailing edge is the "نصف دائرة" pennant cut,
-    // and it waves gently like real cloth
-    var raise = clamp((z.progress+100)/200, 0.08, 1);
-    var flagY = py - poleH*raise;
-    var flagW = T*7.4, flagH = T*4.8;
-    var wave = Math.sin(nowMs/420 + z.x*0.4) * T*0.55;
-
-    ctx.save();
-    ctx.translate(px, flagY);
-    ctx.beginPath();
-    ctx.moveTo(0, -flagH/2);
-    ctx.lineTo(flagW*0.78, -flagH/2 + wave*0.35);
-    ctx.quadraticCurveTo(flagW, wave*0.5, flagW*0.78, flagH/2 + wave*0.35);
-    ctx.lineTo(0, flagH/2);
-    ctx.closePath();
-    var flagGrad = ctx.createLinearGradient(0,-flagH/2,flagW,flagH/2);
-    flagGrad.addColorStop(0, ownerColor); flagGrad.addColorStop(1, shadeHex(ownerColor,-0.25));
-    ctx.fillStyle = flagGrad;
-    ctx.shadowColor = ownerColor; ctx.shadowBlur = T*1.2;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold '+(T*3)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(z.id, flagW*0.36, wave*0.4);
-    ctx.restore();
-
-    // "pulling the flag" cue: a taut, pulsing line from whichever units are
-    // actively inside the zone up to the banner — like reaching up and hauling it
-    league.units.forEach(function(u){
-      if(u.ko) return;
-      if(Math.hypot(u.x-z.x, u.y-z.y) > LEAGUE_CAPTURE_RADIUS) return;
-      var pullColor = u.team==='blue' ? '#3fe0d0' : '#d43c56';
-      var dashPhase = (nowMs/90 + u.idx*7) % 16;
-      ctx.save();
-      ctx.setLineDash([5,6]); ctx.lineDashOffset = -dashPhase;
-      ctx.strokeStyle = pullColor; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(u.x*T, u.y*T - T*2); ctx.lineTo(px, flagY); ctx.stroke();
-      ctx.restore();
-    });
+    ctx.fillStyle = '#f2ead9'; ctx.font = 'bold '+(T*4.2)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(z.id, px, py);
   });
 
   // units — KO'd units drawn faint first, alive units drawn after (so they render on top).
@@ -6341,7 +6668,7 @@ var Engine3D = (function(){
     var eyeR = new T.Mesh(eyeGeo, mEye); eyeR.position.set(0.09,1.81,0.205); g.add(eyeR);
 
     // ---- class-flavored headwear ----
-    var hatStyle = opts.weapon==='staff' ? 'wizard' : (opts.weapon==='bow' ? 'hood' : 'helm');
+    var hatStyle = opts.weapon==='staff' ? 'wizard' : ((opts.weapon==='bow'||opts.weapon==='dagger') ? 'hood' : 'helm');
     if(hatStyle==='wizard'){
       var brim = castRecv(new T.Mesh(new T.ConeGeometry(0.34,0.06,12), mSecondary));
       brim.position.y = 1.97; g.add(brim);
@@ -6440,6 +6767,29 @@ var Engine3D = (function(){
       string.position.x = 0.27; weapon.add(string);
       weapon.position.set(0,-0.46,0.04);
       weapon.rotation.y = 0.15;
+    } else if(opts.weapon==='dagger'){
+      weapon = new T.Group();
+      var dgrip = castRecv(new T.Mesh(new T.CylinderGeometry(0.022,0.024,0.12,8), mLeather));
+      dgrip.position.y = -0.06; weapon.add(dgrip);
+      var dguard = castRecv(new T.Mesh(new T.BoxGeometry(0.11,0.022,0.03), mMetal));
+      dguard.position.y = 0.005; weapon.add(dguard);
+      var dblade = castRecv(new T.Mesh(new T.BoxGeometry(0.032,0.30,0.014), mMetal));
+      dblade.position.y = 0.16; weapon.add(dblade);
+      var dtip = castRecv(new T.Mesh(new T.ConeGeometry(0.018,0.06,4), mMetal));
+      dtip.position.y = 0.325; dtip.rotation.y = Math.PI/4; weapon.add(dtip);
+      weapon.position.set(0.02,-0.5,0.03);
+      weapon.rotation.z = -0.18;
+    } else if(opts.weapon==='hammer'){
+      weapon = new T.Group();
+      var hshaft = castRecv(new T.Mesh(new T.CylinderGeometry(0.03,0.034,0.62,8), mSecondary));
+      weapon.add(hshaft);
+      var hwrap = new T.Mesh(new T.TorusGeometry(0.036,0.01,6,10), mMetal); hwrap.rotation.x=Math.PI/2; hwrap.position.y=-0.1; weapon.add(hwrap);
+      var hhead = castRecv(new T.Mesh(new T.BoxGeometry(0.22,0.16,0.18), mMetal));
+      hhead.position.y = 0.36; weapon.add(hhead);
+      var horb = new T.Mesh(new T.SphereGeometry(0.06,10,8), mGlow);
+      horb.position.y = 0.36; weapon.add(horb);
+      weapon.position.set(0,-0.62,0);
+      weaponGlow = horb;
     }
     if(weapon) armRPivot.add(weapon);
 
@@ -6792,7 +7142,7 @@ var Map3D = {
     if(this.player || !this.scene) return;
     var p = state.player; if(!p) return;
     var pal = CLASS_PALETTE[p.cls] || CLASS_PALETTE.warrior;
-    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow', assassin:'dagger', paladin:'hammer'};
     var rarity = getEquippedRarity(p);
     var pal2 = { primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:RARITY_COLORS[rarity]||RARITY_COLORS.common };
     this.player = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[p.cls]});
@@ -6979,7 +7329,7 @@ var Battle3D = {
       self.applyZoneEnvironment(enemy.zone||'grass');
       var p = state.player;
       var pal = CLASS_PALETTE[p.cls] || CLASS_PALETTE.warrior;
-      var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+      var weaponMap = {warrior:'sword', mage:'staff', archer:'bow', assassin:'dagger', paladin:'hammer'};
       var rarity = getEquippedRarity(p);
       var pal2 = { primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:RARITY_COLORS[rarity]||RARITY_COLORS.common };
       if(self.player) self.scene.remove(self.player);
@@ -7176,7 +7526,7 @@ var League3D = {
     var key = u.team+u.idx;
     if(this.models[key]) return this.models[key];
     var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
-    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow'};
+    var weaponMap = {warrior:'sword', mage:'staff', archer:'bow', assassin:'dagger', paladin:'hammer'};
     var pal2 = {primary:pal.primary, secondary:pal.secondary, metal:pal.metal, skin:pal.skin, aura:this.teamColor(u.team)};
     var model = Engine3D.buildHumanoid(pal2, {weapon:weaponMap[u.cls], banner:this.teamColor(u.team)});
     var s = this.scaleFor(u);
