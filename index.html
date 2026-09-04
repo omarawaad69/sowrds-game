@@ -82,13 +82,14 @@ input{font-family:inherit;}
 }
 @media (orientation:landscape){
   #app{ max-width:none; }
-  .screen:not(#screen-game):not(#screen-battle):not(#screen-league):not(#screen-league-showcase){
+  .screen:not(#screen-game):not(#screen-battle):not(#screen-league):not(#screen-league-showcase):not(#screen-summon){
     left:0; right:0; width:560px; max-width:92vw; margin:0 auto; transform:none;
   }
   /* battle / league screens go fully edge-to-edge/widescreen in landscape — no centered column
-     (this must include #screen-league-showcase — the 5×5 team lineup screen — otherwise it gets
-     boxed into the narrow centered column above and shows black bars down both sides) */
-  #screen-battle, #screen-league, #screen-league-showcase{ width:100%; max-width:none; left:0; right:0; }
+     (this must include #screen-league-showcase — the 5×5 team lineup screen — and #screen-summon
+     — the gacha/summon banner screen — otherwise they get boxed into the narrow centered column
+     above and show black bars down both sides) */
+  #screen-battle, #screen-league, #screen-league-showcase, #screen-summon{ width:100%; max-width:none; left:0; right:0; }
 }
 .screen{
   position:absolute;inset:0;
@@ -160,6 +161,14 @@ input{font-family:inherit;}
   align-items:center;
   overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
   background:radial-gradient(ellipse at 50% 20%, #241a3a 0%, #0b0714 62%, #050308 100%);
+}
+#screen-summon{
+  /* same reasoning as #screen-league-showcase directly above: keep the base
+     position:absolute + overflow-y:auto so a short/landscape screen scrolls
+     instead of clipping the pull buttons at the bottom. */
+  align-items:center;
+  overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+  background:radial-gradient(ellipse at 50% 20%, #2a1a3a 0%, #0b0714 62%, #050308 100%);
 }
 .lgs-bg{ position:absolute; inset:0; z-index:0; }
 .lgs-rays{
@@ -271,6 +280,119 @@ input{font-family:inherit;}
   box-shadow:0 6px 0 #5c4310, 0 10px 22px rgba(224,184,76,0.35);
 }
 .lgs-confirm:active{ transform:translateY(4px); box-shadow:0 2px 0 #5c4310; }
+
+/* ============================= SUMMON / GACHA SCREEN ============================= */
+.smn-featured{
+  position:relative; z-index:2; width:62%; max-width:220px; aspect-ratio:1/1.15;
+  margin:14px auto 6px; display:flex; align-items:center; justify-content:center;
+}
+.smn-featured-glow{
+  position:absolute; inset:-14%; border-radius:50%;
+  background:radial-gradient(ellipse at center, rgba(255,92,120,0.4) 0%, rgba(224,184,76,0.22) 45%, transparent 74%);
+  filter:blur(6px); animation:lgsGlowPulse 2.6s ease-in-out infinite;
+}
+.smn-featured-frame{
+  position:relative; width:100%; height:100%; border-radius:16px;
+  background:linear-gradient(180deg, rgba(40,20,45,0.88), rgba(10,6,16,0.94));
+  border:2px solid var(--crimson-bright,#ff5c78);
+  box-shadow:0 0 26px rgba(255,92,120,0.55), inset 0 0 26px rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.smn-featured-frame svg{ width:88%; height:88%; filter:drop-shadow(0 8px 14px rgba(0,0,0,0.6)); }
+.smn-featured-caption{
+  position:absolute; bottom:-24px; left:0; right:0; text-align:center;
+  font-size:11px; color:var(--text-dim); white-space:nowrap;
+}
+.smn-featured-caption b{ color:var(--crimson-bright,#ff5c78); }
+
+.smn-rates{
+  position:relative; z-index:2; display:flex; flex-wrap:wrap; justify-content:center; gap:6px;
+  width:88%; max-width:420px; margin:34px auto 6px;
+}
+.smn-rate-chip{
+  font-size:9.5px; padding:3px 9px; border-radius:999px; border:1px solid currentColor;
+  background:rgba(255,255,255,0.04); letter-spacing:.3px;
+}
+
+.smn-btn-row{
+  position:relative; z-index:2; width:88%; max-width:420px;
+  display:flex; gap:10px; margin:16px auto max(16px, env(safe-area-inset-bottom,0px));
+}
+.smn-pull-btn{
+  position:relative; flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:13px 8px; border-radius:14px; font-weight:800;
+  background:linear-gradient(180deg, rgba(138,111,214,0.28), rgba(20,12,32,0.6));
+  border:1px solid var(--violet,#8a6fd6); color:var(--text-light);
+}
+.smn-pull-btn:active{ transform:translateY(2px); }
+.smn-pull-btn.featured{
+  background:linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
+  border:1px solid var(--gold-bright); color:#241505;
+  box-shadow:0 6px 0 #5c4310, 0 10px 20px rgba(224,184,76,0.3);
+}
+.smn-pull-btn.featured:active{ box-shadow:0 2px 0 #5c4310; }
+.smn-pull-badge{
+  position:absolute; top:-9px; right:8px; background:var(--crimson-bright,#ff5c78);
+  color:#fff; font-size:8.5px; font-weight:900; padding:2px 7px; border-radius:999px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.4);
+}
+.smn-pull-title{ font-size:13.5px; }
+.smn-pull-cost{ font-size:11px; opacity:0.85; }
+
+/* ---- cinematic pull-reveal overlay ---- */
+.smn-reveal{
+  position:fixed; inset:0; z-index:500;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:18px; padding:16px;
+}
+.smn-reveal.hidden{ display:none; }
+.smn-reveal-bg{
+  position:absolute; inset:0; z-index:0;
+  background:radial-gradient(ellipse at 50% 45%, #241a3a 0%, #05030a 78%);
+  animation:smnBgIn .3s ease;
+}
+@keyframes smnBgIn{ from{opacity:0;} to{opacity:1;} }
+.smn-reveal-burst{
+  position:absolute; z-index:1; left:50%; top:45%; width:12px; height:12px;
+  border-radius:50%; transform:translate(-50%,-50%);
+  background:var(--burst-color,#8a6fd6);
+  box-shadow:0 0 0 0 var(--burst-color,#8a6fd6);
+  animation:smnBurst 0.9s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes smnBurst{
+  0%{ width:12px; height:12px; opacity:1; }
+  60%{ width:640px; height:640px; opacity:0.5; }
+  100%{ width:900px; height:900px; opacity:0; }
+}
+.smn-reveal-burst.rarity-mythic{ background:var(--crimson-bright,#ff5c78); }
+.smn-reveal-burst.rarity-legendary{ background:var(--gold-bright,#e0b84c); }
+
+.smn-reveal-cards{
+  position:relative; z-index:2; display:flex; flex-wrap:wrap; justify-content:center;
+  gap:10px; max-width:520px;
+}
+.smn-reveal-card{
+  width:84px; opacity:0; transform:translateY(18px) scale(0.85);
+  animation:smnCardIn .45s cubic-bezier(.2,.9,.3,1) forwards;
+}
+@keyframes smnCardIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
+.smn-card-inner{
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  padding:12px 6px; border-radius:12px;
+  background:linear-gradient(180deg, rgba(30,20,45,0.92), rgba(8,5,14,0.96));
+  border:1.5px solid var(--card-color,#9aa3b5);
+  box-shadow:0 0 16px var(--card-color,#9aa3b5), inset 0 0 14px rgba(0,0,0,0.5);
+}
+.smn-reveal-card.rarity-mythic .smn-card-inner{ box-shadow:0 0 24px var(--card-color,#ff5c78), inset 0 0 14px rgba(0,0,0,0.5); }
+.smn-card-icon{ font-size:26px; filter:drop-shadow(0 3px 4px rgba(0,0,0,0.5)); }
+.smn-card-name{ font-size:9.5px; font-weight:700; color:var(--text-light); text-align:center; line-height:1.25; }
+.smn-card-rarity{ font-size:8px; }
+
+.smn-reveal-skip{
+  position:relative; z-index:2; padding:10px 22px; border-radius:999px;
+  background:rgba(10,6,18,0.65); border:1px solid var(--line); color:var(--text-light);
+  font-size:12px; font-weight:700; letter-spacing:.5px;
+}
 
 /* compact spacing on short landscape phones (most real devices in landscape) so the
    whole showcase — topbar, banner, power row, hero row, confirm button — fits in view
@@ -1375,8 +1497,9 @@ input{font-family:inherit;}
   transition:transform .12s;
 }
 #lg-special:active{ transform:scale(0.92); }
-#lg-special.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
-#lg-special .cd-num{ position:absolute; font-size:18px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-special.cooling{ pointer-events:none; }
+#lg-special .cd-num{ position:relative; z-index:2; font-size:18px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-special #lg-special-icon{ position:relative; z-index:2; }
 #lg-ability{
   width:46px;height:46px;border-radius:50%;flex-shrink:0;position:relative;
   background:radial-gradient(circle at 35% 30%, #b9a2ef, var(--violet) 70%);
@@ -1385,8 +1508,20 @@ input{font-family:inherit;}
   transition:transform .12s;
 }
 #lg-ability:active{ transform:scale(0.92); }
-#lg-ability.cooling{ filter:grayscale(0.85) brightness(0.55); pointer-events:none; }
-#lg-ability .cd-num{ position:absolute; font-size:15px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-ability.cooling{ pointer-events:none; }
+#lg-ability .cd-num{ position:relative; z-index:2; font-size:15px; font-weight:900; color:#fff; text-shadow:0 2px 4px #000; }
+#lg-ability #lg-ability-icon{ position:relative; z-index:2; }
+
+/* radial "clock sweep" cooldown mask — a dark pie slice shrinks clockwise as
+   the ability recharges, the same kind of at-a-glance cooldown feedback
+   premium mobile games (One Piece Bounty Rush included) use instead of a
+   bare countdown number on a flat grayscale button. */
+.cd-sweep{
+  position:absolute; inset:0; z-index:1; border-radius:50%; pointer-events:none;
+  background:conic-gradient(rgba(4,2,10,0.8) var(--cd-deg,0deg), transparent var(--cd-deg,0deg));
+  opacity:0; transition:opacity .15s ease;
+}
+.cd-sweep.active{ opacity:1; }
 
 #lg-ultimate{
   width:58px;height:58px;border-radius:50%;flex-shrink:0;position:relative;overflow:hidden;
@@ -1588,6 +1723,10 @@ input{font-family:inherit;}
         <div class="action-col">
           <button class="round-btn-sm" id="btn-inventory">🎒</button>
           <span class="action-label">الحقيبة</span>
+        </div>
+        <div class="action-col">
+          <button class="round-btn-sm" id="btn-summon">🎰</button>
+          <span class="action-label">الاستدعاء</span>
         </div>
       </div>
     </div>
@@ -1868,6 +2007,54 @@ input{font-family:inherit;}
     <button class="lgs-confirm" id="lgs-confirm">⚔️ دخول المعركة</button>
   </div>
 
+  <!-- ============================= SUMMON / GACHA SCREEN ============================= -->
+  <div id="screen-summon" class="screen hidden">
+    <div class="lgs-bg">
+      <div class="particle-field" id="smn-particles"></div>
+      <div class="lgs-rays"></div>
+      <div class="lgs-vignette"></div>
+    </div>
+    <div class="lgs-topbar">
+      <button class="lgs-back" id="smn-back">←</button>
+      <div class="lgs-title">بوابة الاستدعاء</div>
+      <div class="lgs-spacer"></div>
+    </div>
+
+    <div class="lgs-power-row">
+      <span class="lgs-power-icon">🪙</span>
+      <span class="lgs-power-label">ذهبك</span>
+      <span class="lgs-power-num" id="smn-gold-num">0</span>
+    </div>
+
+    <div class="smn-featured">
+      <div class="smn-featured-glow"></div>
+      <div class="smn-featured-frame" id="smn-featured-frame"></div>
+      <div class="smn-featured-caption">فرصة الحصول على عتاد <b>خرافي</b> ✨</div>
+    </div>
+
+    <div class="smn-rates" id="smn-rates"></div>
+
+    <div class="smn-btn-row">
+      <button class="smn-pull-btn" id="smn-pull-1">
+        <span class="smn-pull-title">سحب ×1</span>
+        <span class="smn-pull-cost">🪙 <span id="smn-cost-1"></span></span>
+      </button>
+      <button class="smn-pull-btn featured" id="smn-pull-10">
+        <span class="smn-pull-badge">وفّر!</span>
+        <span class="smn-pull-title">سحب ×10</span>
+        <span class="smn-pull-cost">🪙 <span id="smn-cost-10"></span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Summon reveal overlay — cinematic pull result -->
+  <div id="smn-reveal" class="smn-reveal hidden">
+    <div class="smn-reveal-bg"></div>
+    <div class="smn-reveal-burst" id="smn-reveal-burst"></div>
+    <div class="smn-reveal-cards" id="smn-reveal-cards"></div>
+    <button class="smn-reveal-skip" id="smn-reveal-skip">اضغط للمتابعة ▶</button>
+  </div>
+
   <!-- ============================= LEAGUE BATTLE (5×5 FLAG CAPTURE) ============================= -->
   <div id="screen-league" class="screen hidden">
     <div id="league-wrap">
@@ -1917,8 +2104,14 @@ input{font-family:inherit;}
             <div class="lg-ult-fill" id="lg-ultimate-fill"></div>
             <span id="lg-ultimate-icon">🌋</span>
           </button>
-          <button id="lg-ability" class="lg-round-ability" title="قدرة سريعة"><span id="lg-ability-icon">💫</span><span class="cd-num hidden" id="lg-ability-cd"></span></button>
-          <button id="lg-special" class="lg-round-special" title="القدرة الخاصة"><span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span></button>
+          <button id="lg-ability" class="lg-round-ability" title="قدرة سريعة">
+            <div class="cd-sweep" id="lg-ability-sweep"></div>
+            <span id="lg-ability-icon">💫</span><span class="cd-num hidden" id="lg-ability-cd"></span>
+          </button>
+          <button id="lg-special" class="lg-round-special" title="القدرة الخاصة">
+            <div class="cd-sweep" id="lg-special-sweep"></div>
+            <span id="lg-special-icon">⚔️</span><span class="cd-num hidden" id="lg-special-cd"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -3481,6 +3674,136 @@ function updateInvTabs(){
   $('tab-accessory').classList.toggle('active', invTab==='accessory');
 }
 function equipIconFor(slot){ return slot==='weapon' ? '⚔️' : slot==='armor' ? '🛡️' : '💍'; }
+
+/* ============================================================
+   SUMMON / GACHA SYSTEM
+   يستخدم الذهب العادي (نفس عملة المتجر) عشان مايكسرش اقتصاد اللعبة
+   بعملة جديدة، لكنه بيفتح الوصول للعتاد الخرافي (mythic) اللي كان
+   معرّف في EQUIPMENT من غير أي طريقة فعلية للحصول عليه (price:0
+   ومش موجود في أي SHOP_* list) — البوابة دي هي الطريقة الرسمية له.
+   ============================================================ */
+var SUMMON_RATES = { common:0.40, rare:0.30, epic:0.20, legendary:0.08, mythic:0.02 };
+var SUMMON_COST_SINGLE = 150;
+var SUMMON_COST_TEN = 1350; // خصم ×10 (بسعر 9 بدل 10) زي أغلب ألعاب السحب
+
+var SUMMON_POOL = null;
+function buildSummonPool(){
+  if(SUMMON_POOL) return SUMMON_POOL;
+  var pool = { common:[], rare:[], epic:[], legendary:[], mythic:[] };
+  Object.keys(EQUIPMENT).forEach(function(id){
+    if(id==='weapon_basic' || id==='armor_basic') return; // معدات البداية مالهاش قيمة كسحب
+    var def = EQUIPMENT[id];
+    if(pool[def.rarity]) pool[def.rarity].push(id);
+  });
+  SUMMON_POOL = pool;
+  return pool;
+}
+
+function rollSummonRarity(){
+  var r = Math.random(), acc = 0;
+  var keys = ['common','rare','epic','legendary','mythic'];
+  for(var i=0;i<keys.length;i++){
+    acc += SUMMON_RATES[keys[i]];
+    if(r <= acc) return keys[i];
+  }
+  return 'common';
+}
+
+function rollSummonItem(){
+  var pool = buildSummonPool();
+  var rarity = rollSummonRarity();
+  var list = pool[rarity];
+  if(!list || !list.length){ rarity = 'common'; list = pool.common; }
+  var id = list[Math.floor(Math.random()*list.length)];
+  return { id:id, rarity:rarity, def:EQUIPMENT[id] };
+}
+
+function initSmnParticles(){
+  var field = $('smn-particles');
+  if(!field || field.childElementCount) return;
+  for(var i=0;i<20;i++){
+    var s = document.createElement('div');
+    s.className='spark';
+    s.style.left = (Math.random()*100)+'%';
+    s.style.bottom = '-10px';
+    s.style.setProperty('--drift', (Math.random()*60-30)+'px');
+    s.style.animationDuration = (4+Math.random()*4)+'s';
+    s.style.animationDelay = (Math.random()*5)+'s';
+    field.appendChild(s);
+  }
+}
+
+function openSummonScreen(){
+  var p = state.player;
+  initSmnParticles();
+  $('smn-gold-num').textContent = p.gold;
+  $('smn-cost-1').textContent = SUMMON_COST_SINGLE;
+  $('smn-cost-10').textContent = SUMMON_COST_TEN;
+  $('smn-featured-frame').innerHTML = heroSVG(p.cls, 'mythic');
+  var ratesWrap = $('smn-rates');
+  ratesWrap.innerHTML = ['common','rare','epic','legendary','mythic'].map(function(r){
+    return '<span class="smn-rate-chip rarity-'+r+'">'+RARITY_LABELS[r]+' '+Math.round(SUMMON_RATES[r]*100)+'%</span>';
+  }).join('');
+  showScreen('screen-summon');
+}
+
+function doSummonPull(count){
+  var p = state.player;
+  var cost = count===10 ? SUMMON_COST_TEN : SUMMON_COST_SINGLE;
+  if(p.gold < cost){ toast('لا يوجد ذهب كافٍ'); return; }
+  p.gold -= cost;
+  var results = [];
+  for(var i=0;i<count;i++) results.push(rollSummonItem());
+  results.forEach(function(res){ p.equipOwned[res.id] = 1; });
+  $('smn-gold-num').textContent = p.gold;
+  renderHUD();
+  saveGame(true);
+  showSummonReveal(results);
+}
+
+var SUMMON_RARITY_ORDER = ['common','rare','epic','legendary','mythic'];
+function showSummonReveal(results){
+  var overlay = $('smn-reveal');
+  var cardsWrap = $('smn-reveal-cards');
+  cardsWrap.innerHTML = '';
+  var burst = $('smn-reveal-burst');
+  var bestRarity = results.reduce(function(best, r){
+    return SUMMON_RARITY_ORDER.indexOf(r.rarity) > SUMMON_RARITY_ORDER.indexOf(best) ? r.rarity : best;
+  }, 'common');
+  burst.style.setProperty('--burst-color', RARITY_COLORS[bestRarity]);
+  burst.className = 'smn-reveal-burst rarity-'+bestRarity;
+  // restart the burst CSS animation on every pull (re-adding the same class
+  // name wouldn't retrigger it, so force a reflow between removing/adding)
+  void burst.offsetWidth;
+
+  results.forEach(function(res, i){
+    var card = document.createElement('div');
+    card.className = 'smn-reveal-card rarity-'+res.rarity;
+    card.style.setProperty('--card-color', RARITY_COLORS[res.rarity]);
+    card.style.animationDelay = (i*0.12)+'s';
+    card.innerHTML =
+      '<div class="smn-card-inner">'+
+        '<div class="smn-card-icon">'+equipIconFor(res.def.slot)+'</div>'+
+        '<div class="smn-card-name">'+res.def.name+'</div>'+
+        '<div class="smn-card-rarity rarity-badge rarity-'+res.rarity+'">'+RARITY_LABELS[res.rarity]+'</div>'+
+      '</div>';
+    cardsWrap.appendChild(card);
+  });
+
+  overlay.classList.remove('hidden');
+
+  if(navigator.vibrate){
+    try{
+      navigator.vibrate(bestRarity==='mythic' ? [40,60,40,60,120] : bestRarity==='legendary' ? [30,50,80] : [20]);
+    }catch(e){}
+  }
+}
+
+function closeSummonReveal(){
+  $('smn-reveal').classList.add('hidden');
+  openSummonScreen(); // يحدّث الذهب والمعدل المعروض بعد السحب
+}
+
 function renderInventory(){
   var body = $('inv-body');
   body.innerHTML = '';
@@ -3721,7 +4044,12 @@ function startBattle(enemyId, isBoss){
   hideSubPanels();
   showScreen('screen-battle');
   initBattleArena();
-  Battle3D.setup(enemy);
+  // Battle3D.setup(enemy); — 3D solo view disabled by request: the flat 2D
+  // anime-style hero/enemy portraits (heroSVG/creatureSVG above) now stay on
+  // screen permanently instead of fading out into the 3D scene. Every other
+  // Battle3D.* call below (heroAttack, heroHurt, enemyAttack, ...) already
+  // no-ops safely on its own when Battle3D.player/.enemy were never set up,
+  // so nothing else needs to change to fully turn this off.
   renderBattle();
 }
 
@@ -5718,7 +6046,7 @@ function leagueResolveSpecial(p){
 
 function updateLeagueSpecialBtn(){
   if(!league) return;
-  var btn = $('lg-special'), cdEl = $('lg-special-cd'), icon = $('lg-special-icon');
+  var btn = $('lg-special'), cdEl = $('lg-special-cd'), icon = $('lg-special-icon'), sweep = $('lg-special-sweep');
   var p = myLeagueUnit();
   if(!p) return;
   icon.textContent = CLASSES[p.cls].icon;
@@ -5726,9 +6054,13 @@ function updateLeagueSpecialBtn(){
     btn.classList.add('cooling');
     cdEl.classList.remove('hidden');
     cdEl.textContent = Math.ceil(p.specialCd);
+    var frac = clamp(p.specialCd/league.specialCdMax, 0, 1);
+    sweep.style.setProperty('--cd-deg', (frac*360)+'deg');
+    sweep.classList.add('active');
   } else {
     btn.classList.remove('cooling');
     cdEl.classList.add('hidden');
+    sweep.classList.remove('active');
   }
 }
 
@@ -5766,7 +6098,7 @@ function leagueResolveAbility(p){
 
 function updateLeagueAbilityBtn(){
   if(!league) return;
-  var btn = $('lg-ability'), cdEl = $('lg-ability-cd'), icon = $('lg-ability-icon');
+  var btn = $('lg-ability'), cdEl = $('lg-ability-cd'), icon = $('lg-ability-icon'), sweep = $('lg-ability-sweep');
   if(!btn) return;
   var p = myLeagueUnit();
   if(!p) return;
@@ -5775,9 +6107,13 @@ function updateLeagueAbilityBtn(){
     btn.classList.add('cooling');
     cdEl.classList.remove('hidden');
     cdEl.textContent = Math.ceil(p.abilityCd);
+    var frac = clamp(p.abilityCd/LEAGUE_ABILITY_CD[p.cls], 0, 1);
+    sweep.style.setProperty('--cd-deg', (frac*360)+'deg');
+    sweep.classList.add('active');
   } else {
     btn.classList.remove('cooling');
     cdEl.classList.add('hidden');
+    sweep.classList.remove('active');
   }
 }
 
@@ -5935,7 +6271,6 @@ function getLeagueHeroSprite(cls, rarity){
 
 function leagueDrawUnitBody(ctx, u, T, scale){
   var pal = CLASS_PALETTE[u.cls] || CLASS_PALETTE.warrior;
-  var teamGlow = u.team==='blue' ? '#3fe0d0' : '#d43c56';
   ctx.save();
   ctx.translate(u.x*T, u.y*T);
   var bobY = u.ko ? 0 : Math.sin(u.bob)*1.4*scale;
@@ -5967,17 +6302,9 @@ function leagueDrawUnitBody(ctx, u, T, scale){
       ctx.fillStyle = pal.primary; ctx.fill();
     }
 
-    // team ring
-    ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62, 0, Math.PI*2);
-    ctx.strokeStyle = teamGlow; ctx.lineWidth = Math.max(1, r*0.09); ctx.globalAlpha = u.ko?0.15:0.85; ctx.stroke();
-
-    // player gold outline + soft glow so your own hero always reads instantly
-    if(u.controlled==='me'){
-      ctx.shadowColor = '#ffe08a'; ctx.shadowBlur = u.ko?0:r*0.3;
-      ctx.beginPath(); ctx.arc(0, r*0.55, r*0.62+Math.max(2,r*0.18), 0, Math.PI*2);
-      ctx.strokeStyle = '#ffe08a'; ctx.lineWidth = Math.max(1, r*0.07); ctx.globalAlpha = u.ko?0.15:1; ctx.stroke();
-      ctx.shadowBlur = 0;
-    }
+    // team affiliation now reads from the nameplate + HP bar color only —
+    // no ring drawn around the portrait, so the character art itself stays
+    // clean and uncluttered instead of being boxed in a colored circle.
 
     // hit flash overlay
     if(u.flash>0 && !u.ko){
@@ -6431,6 +6758,7 @@ function wireEvents(){
 
   $('btn-inventory').addEventListener('click', openInventory);
   $('btn-character').addEventListener('click', openCharacterScreen);
+  $('btn-summon').addEventListener('click', openSummonScreen);
   $('btn-open-menu').addEventListener('click', openMenu);
 
   document.querySelectorAll('[data-close]').forEach(function(btn){
@@ -6530,6 +6858,12 @@ function wireEvents(){
   $('mp-wait-cancel').addEventListener('click', cancelOnlineWait);
   $('lgs-confirm').addEventListener('click', launchLeagueScreen);
   $('lgs-back').addEventListener('click', exitLeagueToTitle);
+
+  // ---- summon / gacha screen ----
+  $('smn-back').addEventListener('click', function(){ showScreen('screen-game'); });
+  $('smn-pull-1').addEventListener('click', function(){ doSummonPull(1); });
+  $('smn-pull-10').addEventListener('click', function(){ doSummonPull(10); });
+  $('smn-reveal-skip').addEventListener('click', closeSummonReveal);
   $('lg-special').addEventListener('click', useLeagueSpecial);
   $('lg-ultimate').addEventListener('click', useLeagueUltimate);
   $('lg-ability').addEventListener('click', useLeagueAbility);
